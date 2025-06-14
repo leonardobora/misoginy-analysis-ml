@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 
 export interface PredictionResult {
@@ -123,7 +122,7 @@ export class MisogynyCNNModel {
     }
   }
 
-  async trainWithData(trainingData: Array<{ lyrics: string; score: number }>): Promise<void> {
+  async trainWithData(trainingData: Array<{ lyrics: string; score: number }>): Promise<tf.History> {
     if (!this.model) {
       await this.createModel();
     }
@@ -237,4 +236,4 @@ export class MisogynyCNNModel {
 }
 
 // Instância singleton do modelo
-export const cnnModel = new MisogyneCNNModel();
+export const cnnModel = new MisogynyCNNModel();
