@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Music, Save, SkipForward, CheckCircle, Upload } from 'lucide-react';
+import { Music, Save, SkipForward, CheckCircle, Upload, Filter, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,12 +21,16 @@ interface Song {
 
 const ManualLabeling = () => {
   const [songs, setSongs] = useState<Song[]>([]);
+  const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [justification, setJustification] = useState('');
   const [severityLevel, setSeverityLevel] = useState('');
   const [labeledCount, setLabeledCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [selectedSongId, setSelectedSongId] = useState<string>('');
 
   const severityLevels = [
     { value: 'baixo', label: 'Baixo (0-33)', description: 'Conteúdo com pouca ou nenhuma misoginia' },
@@ -37,6 +42,10 @@ const ManualLabeling = () => {
     loadSongs();
     loadLabeledCount();
   }, []);
+
+  useEffect(() => {
+    filterSongs();
+  }, [songs, selectedYear]);
 
   const loadSongs = async () => {
     try {
@@ -53,11 +62,18 @@ const ManualLabeling = () => {
         .select('*')
         .not('id', 'in', `(${labeledIds.length > 0 ? labeledIds.join(',') : '0'})`)
         .order('year', { ascending: true })
-        .limit(100);
+        .limit(500);
 
       if (error) throw error;
       
       setSongs(data || []);
+      
+      // Extrair anos únicos disponíveis
+      const years = [...new Set((data || []).map(song => song.year))].sort((a, b) => a - b);
+      setAvailableYears(years);
+      
+      console.log(`${data?.length || 0} músicas carregadas, anos disponíveis:`, years);
+      
     } catch (error) {
       console.error('Erro ao carregar músicas:', error);
       toast({
@@ -68,6 +84,20 @@ const ManualLabeling = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const filterSongs = () => {
+    let filtered = songs;
+    
+    if (selectedYear !== 'all') {
+      filtered = songs.filter(song => song.year === parseInt(selectedYear));
+    }
+    
+    setFilteredSongs(filtered);
+    setCurrentSongIndex(0);
+    setSelectedSongId('');
+    
+    console.log(`Filtro aplicado: ${selectedYear === 'all' ? 'Todos os anos' : selectedYear}, ${filtered.length} músicas`);
   };
 
   const loadLabeledCount = async () => {
@@ -108,6 +138,18 @@ const ManualLabeling = () => {
     setSeverityLevel(getSeverityFromScore(value[0]));
   };
 
+  const handleSongSelection = (songId: string) => {
+    const songIndex = filteredSongs.findIndex(song => song.id === parseInt(songId));
+    if (songIndex !== -1) {
+      setCurrentSongIndex(songIndex);
+      setSelectedSongId(songId);
+      // Reset form
+      setScore(0);
+      setJustification('');
+      setSeverityLevel('');
+    }
+  };
+
   const saveLabel = async () => {
     if (!severityLevel) {
       toast({
@@ -119,7 +161,7 @@ const ManualLabeling = () => {
     }
 
     try {
-      const currentSong = songs[currentSongIndex];
+      const currentSong = filteredSongs[currentSongIndex];
       
       const { error } = await supabase
         .from('manual_labels')
@@ -151,15 +193,17 @@ const ManualLabeling = () => {
   };
 
   const nextSong = () => {
-    if (currentSongIndex < songs.length - 1) {
-      setCurrentSongIndex(currentSongIndex + 1);
+    if (currentSongIndex < filteredSongs.length - 1) {
+      const nextIndex = currentSongIndex + 1;
+      setCurrentSongIndex(nextIndex);
+      setSelectedSongId(filteredSongs[nextIndex].id.toString());
       setScore(0);
       setJustification('');
       setSeverityLevel('');
     } else {
       toast({
-        title: "Rotulagem Completa",
-        description: "Todas as músicas disponíveis foram rotuladas!",
+        title: "Fim das Músicas",
+        description: "Todas as músicas filtradas foram processadas!",
       });
     }
   };
@@ -261,7 +305,63 @@ const ManualLabeling = () => {
     );
   }
 
-  const currentSong = songs[currentSongIndex];
+  if (filteredSongs.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Header com filtros */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Rotulagem Manual - Misoginia</h2>
+            <p className="text-muted-foreground">
+              Classifique as músicas de acordo com o conteúdo misógino
+            </p>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtrar Músicas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Filtrar por Ano</label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Anos ({songs.length} músicas)</SelectItem>
+                    {availableYears.map(year => {
+                      const count = songs.filter(song => song.year === year).length;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year} ({count} músicas)
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center p-8">
+          <Music className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">Nenhuma música encontrada</h3>
+          <p className="text-muted-foreground">
+            Nenhuma música não rotulada encontrada para o ano selecionado.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentSong = filteredSongs[currentSongIndex];
 
   return (
     <div className="space-y-6">
@@ -279,7 +379,8 @@ const ManualLabeling = () => {
               {labeledCount} rotuladas
             </Badge>
             <p className="text-sm text-muted-foreground">
-              Música {currentSongIndex + 1} de {songs.length}
+              Música {currentSongIndex + 1} de {filteredSongs.length} 
+              {selectedYear !== 'all' && ` (${selectedYear})`}
             </p>
           </div>
           <div>
@@ -301,6 +402,60 @@ const ManualLabeling = () => {
           </div>
         </div>
       </div>
+
+      {/* Filtros e Seleção */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Seleção de Música
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                <Calendar className="h-4 w-4 inline mr-1" />
+                Filtrar por Ano
+              </label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Anos ({songs.length} músicas)</SelectItem>
+                  {availableYears.map(year => {
+                    const count = songs.filter(song => song.year === year).length;
+                    return (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year} ({count} músicas)
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                <Music className="h-4 w-4 inline mr-1" />
+                Selecionar Música Específica
+              </label>
+              <Select value={selectedSongId} onValueChange={handleSongSelection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha uma música..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSongs.map((song, index) => (
+                    <SelectItem key={song.id} value={song.id.toString()}>
+                      {song.artist} - {song.title} ({song.year})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Informações da Música */}
