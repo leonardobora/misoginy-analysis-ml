@@ -5,62 +5,65 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CheckCircle, Music } from 'lucide-react';
+import { AlertCircle, CheckCircle, Music, Brain } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-interface ClassificationResult {
-  category: string;
-  probability: number;
-  severity: 'low' | 'medium' | 'high';
+interface MisogynyResult {
+  score: number;
+  level: 'baixo' | 'medio' | 'alto';
+  confidence: number;
+  keyTerms: string[];
+  explanation: string;
 }
 
 const ContentClassifier = () => {
   const [lyrics, setLyrics] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [results, setResults] = useState<ClassificationResult[]>([]);
+  const [result, setResult] = useState<MisogynyResult | null>(null);
 
-  const categories = [
-    { name: 'Misoginia', color: 'bg-red-500' },
-    { name: 'Violência', color: 'bg-orange-500' },
-    { name: 'Depressão', color: 'bg-blue-500' },
-    { name: 'Suicídio', color: 'bg-purple-500' },
-    { name: 'Racismo', color: 'bg-yellow-500' },
-    { name: 'Homofobia', color: 'bg-pink-500' },
-    { name: 'Conteúdo Limpo', color: 'bg-green-500' }
-  ];
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'alto': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medio': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'baixo': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getLevelDescription = (level: string) => {
+    switch (level) {
+      case 'alto': return 'Conteúdo claramente misógino detectado';
+      case 'medio': return 'Presença moderada de elementos misóginos';
+      case 'baixo': return 'Pouco ou nenhum conteúdo misógino';
+      default: return 'Análise não disponível';
     }
   };
 
   const simulateAnalysis = async () => {
     setIsAnalyzing(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate CNN processing delay
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Mock classification results
-    const mockResults: ClassificationResult[] = [
-      { category: 'Conteúdo Limpo', probability: 85, severity: 'low' },
-      { category: 'Violência', probability: 12, severity: 'low' },
-      { category: 'Depressão', probability: 8, severity: 'low' },
-      { category: 'Misoginia', probability: 3, severity: 'low' },
-      { category: 'Racismo', probability: 2, severity: 'low' },
-      { category: 'Homofobia', probability: 1, severity: 'low' },
-      { category: 'Suicídio', probability: 1, severity: 'low' }
-    ];
+    // Mock analysis with focus on misogyny detection
+    const mockTerms = ['objectification', 'degrading language', 'sexual references'];
+    const mockScore = Math.floor(Math.random() * 100);
+    const mockLevel = mockScore <= 33 ? 'baixo' : mockScore <= 66 ? 'medio' : 'alto';
     
-    setResults(mockResults);
+    const mockResult: MisogynyResult = {
+      score: mockScore,
+      level: mockLevel,
+      confidence: 0.85,
+      keyTerms: mockTerms,
+      explanation: `Análise baseada em rede neural convolucional. Pontuação: ${mockScore}/100 (${mockLevel}). Termos identificados: ${mockTerms.join(', ')}.`
+    };
+    
+    setResult(mockResult);
     setIsAnalyzing(false);
     
     toast({
       title: "Análise Concluída",
-      description: "A classificação do conteúdo foi realizada com sucesso.",
+      description: `Conteúdo classificado como: ${mockLevel}`,
     });
   };
 
@@ -77,33 +80,26 @@ const ContentClassifier = () => {
     simulateAnalysis();
   };
 
-  const getOverallSafety = () => {
-    if (results.length === 0) return null;
+  const getOverallStatus = () => {
+    if (!result) return null;
     
-    const cleanContent = results.find(r => r.category === 'Conteúdo Limpo');
-    if (cleanContent && cleanContent.probability > 70) {
-      return { status: 'safe', message: 'Conteúdo considerado seguro' };
+    if (result.level === 'baixo') {
+      return { status: 'safe', message: 'Conteúdo considerado seguro', icon: CheckCircle };
+    } else if (result.level === 'medio') {
+      return { status: 'warning', message: 'Atenção: elementos misóginos detectados', icon: AlertCircle };
+    } else {
+      return { status: 'danger', message: 'Alerta: conteúdo claramente misógino', icon: AlertCircle };
     }
-    
-    const highRiskCategories = results.filter(r => 
-      r.category !== 'Conteúdo Limpo' && r.probability > 30
-    );
-    
-    if (highRiskCategories.length > 0) {
-      return { status: 'warning', message: 'Conteúdo pode conter elementos sensíveis' };
-    }
-    
-    return { status: 'moderate', message: 'Conteúdo com baixo risco' };
   };
 
-  const overallSafety = getOverallSafety();
+  const overallStatus = getOverallStatus();
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Classificador de Conteúdo</h2>
+        <h2 className="text-2xl font-bold mb-2">Classificador de Misoginia</h2>
         <p className="text-muted-foreground">
-          Analise letras de música em tempo real para detectar conteúdo sensível
+          Analise letras de música para detectar conteúdo misógino usando redes neurais
         </p>
       </div>
 
@@ -134,7 +130,7 @@ const ContentClassifier = () => {
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || !lyrics.trim()}
               >
-                {isAnalyzing ? 'Analisando...' : 'Analisar Conteúdo'}
+                {isAnalyzing ? 'Analisando...' : 'Analisar Misoginia'}
               </Button>
             </div>
           </CardContent>
@@ -144,13 +140,17 @@ const ContentClassifier = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {overallSafety?.status === 'safe' && <CheckCircle className="h-5 w-5 text-green-500" />}
-              {overallSafety?.status === 'warning' && <AlertCircle className="h-5 w-5 text-red-500" />}
-              {overallSafety?.status === 'moderate' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
+              {overallStatus && (
+                <overallStatus.icon className={`h-5 w-5 ${
+                  overallStatus.status === 'safe' ? 'text-green-500' :
+                  overallStatus.status === 'warning' ? 'text-yellow-500' : 'text-red-500'
+                }`} />
+              )}
+              <Brain className="h-5 w-5" />
               Resultados da Análise
             </CardTitle>
             <CardDescription>
-              {overallSafety?.message || 'Aguardando análise...'}
+              {overallStatus?.message || 'Aguardando análise...'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -161,62 +161,106 @@ const ContentClassifier = () => {
                   <div className="h-4 bg-gray-200 rounded mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded"></div>
                 </div>
-                <p className="text-center text-muted-foreground">
-                  Processando com CNN...
-                </p>
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">
+                    Processando com CNN para detecção de misoginia...
+                  </p>
+                </div>
               </div>
-            ) : results.length > 0 ? (
-              <div className="space-y-4">
-                {results.map((result, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{result.category}</span>
-                        <Badge 
-                          variant="outline"
-                          className={getSeverityColor(result.severity)}
-                        >
-                          {result.severity}
-                        </Badge>
-                      </div>
-                      <span className="text-sm font-medium">
-                        {result.probability}%
-                      </span>
-                    </div>
-                    <Progress 
-                      value={result.probability} 
-                      className="h-2"
-                    />
+            ) : result ? (
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Nível de Misoginia</span>
+                    <Badge 
+                      variant="outline"
+                      className={getLevelColor(result.level)}
+                    >
+                      {result.level.toUpperCase()}
+                    </Badge>
                   </div>
-                ))}
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Pontuação</span>
+                      <span className="text-sm font-medium">{result.score}/100</span>
+                    </div>
+                    <Progress value={result.score} className="h-3" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Confiança do Modelo</span>
+                      <span className="text-sm font-medium">{Math.round(result.confidence * 100)}%</span>
+                    </div>
+                    <Progress value={result.confidence * 100} className="h-2" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium">Termos Identificados</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {result.keyTerms.map((term, index) => (
+                      <Badge key={index} variant="secondary">
+                        {term}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium">Explicação</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {result.explanation}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <Music className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
                 <p>Nenhuma análise realizada ainda</p>
-                <p className="text-sm">Insira uma letra de música para começar</p>
+                <p className="text-sm">Insira uma letra de música para detectar misoginia</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Category Legend */}
+      {/* Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Categorias de Classificação</CardTitle>
+          <CardTitle>Sobre a Detecção de Misoginia</CardTitle>
           <CardDescription>
-            Entenda as diferentes categorias analisadas pelo modelo
+            Como funciona a análise de conteúdo misógino
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            {categories.map((category, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
-                <span className="text-sm font-medium">{category.name}</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Badge variant="outline" className={getLevelColor('baixo')}>
+                BAIXO (0-33)
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                Sem elementos misóginos identificados ou apenas linguagem neutra sobre relacionamentos.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Badge variant="outline" className={getLevelColor('medio')}>
+                MÉDIO (34-66)
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                Presença de estereótipos de gênero, linguagem ambígua ou objetificação sutil.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Badge variant="outline" className={getLevelColor('alto')}>
+                ALTO (67-100)
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                Objetificação explícita, linguagem degradante ou violência contra mulheres.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

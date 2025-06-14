@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Music, Save, SkipForward, CheckCircle } from 'lucide-react';
+import { Music, Save, SkipForward, CheckCircle, Upload } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,15 +23,14 @@ const ManualLabeling = () => {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [justification, setJustification] = useState('');
-  const [selectedTheme, setSelectedTheme] = useState('');
+  const [severityLevel, setSeverityLevel] = useState('');
   const [labeledCount, setLabeledCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  const themes = [
-    'Misoginia e/ou violência contra a mulher',
-    'Depressão e/ou incitação ao suicídio', 
-    'Racismo, homofobia ou discurso de ódio LGBTQIAPN+',
-    'Estímulo ou validação de relacionamentos tóxicos'
+  const severityLevels = [
+    { value: 'baixo', label: 'Baixo (0-33)', description: 'Conteúdo com pouca ou nenhuma misoginia' },
+    { value: 'medio', label: 'Médio (34-66)', description: 'Presença moderada de elementos misóginos' },
+    { value: 'alto', label: 'Alto (67-100)', description: 'Conteúdo claramente misógino ou objetificação explícita' }
   ];
 
   useEffect(() => {
@@ -45,7 +43,8 @@ const ManualLabeling = () => {
       // Carregar músicas que ainda não foram rotuladas
       const { data: labeledSongs } = await supabase
         .from('manual_labels')
-        .select('song_id');
+        .select('song_id')
+        .eq('theme', 'Misoginia');
 
       const labeledIds = labeledSongs?.map(l => l.song_id) || [];
 
@@ -75,7 +74,8 @@ const ManualLabeling = () => {
     try {
       const { count } = await supabase
         .from('manual_labels')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('theme', 'Misoginia');
       
       setLabeledCount(count || 0);
     } catch (error) {
@@ -83,11 +83,36 @@ const ManualLabeling = () => {
     }
   };
 
+  const getSeverityFromScore = (score: number): string => {
+    if (score <= 33) return 'baixo';
+    if (score <= 66) return 'medio';
+    return 'alto';
+  };
+
+  const getScoreFromSeverity = (severity: string): number => {
+    switch (severity) {
+      case 'baixo': return 16;
+      case 'medio': return 50;
+      case 'alto': return 83;
+      default: return 0;
+    }
+  };
+
+  const handleSeverityChange = (value: string) => {
+    setSeverityLevel(value);
+    setScore(getScoreFromSeverity(value));
+  };
+
+  const handleScoreChange = (value: number[]) => {
+    setScore(value[0]);
+    setSeverityLevel(getSeverityFromScore(value[0]));
+  };
+
   const saveLabel = async () => {
-    if (!selectedTheme) {
+    if (!severityLevel) {
       toast({
-        title: "Tema Obrigatório",
-        description: "Por favor, selecione um tema antes de salvar.",
+        title: "Nível Obrigatório",
+        description: "Por favor, selecione um nível de severidade antes de salvar.",
         variant: "destructive"
       });
       return;
@@ -100,7 +125,7 @@ const ManualLabeling = () => {
         .from('manual_labels')
         .insert({
           song_id: currentSong.id,
-          theme: selectedTheme,
+          theme: 'Misoginia',
           score: score / 100, // Converter para escala 0-1
           justification: justification.trim() || null
         });
@@ -109,10 +134,9 @@ const ManualLabeling = () => {
 
       toast({
         title: "Rótulo Salvo",
-        description: `Música "${currentSong.title}" rotulada com sucesso.`,
+        description: `Música "${currentSong.title}" rotulada como ${severityLevel}.`,
       });
 
-      // Próxima música
       nextSong();
       setLabeledCount(prev => prev + 1);
       
@@ -131,7 +155,7 @@ const ManualLabeling = () => {
       setCurrentSongIndex(currentSongIndex + 1);
       setScore(0);
       setJustification('');
-      setSelectedTheme('');
+      setSeverityLevel('');
     } else {
       toast({
         title: "Rotulagem Completa",
@@ -142,6 +166,76 @@ const ManualLabeling = () => {
 
   const skipSong = () => {
     nextSong();
+  };
+
+  const importExistingLabels = async (jsonData: string) => {
+    try {
+      const labels = JSON.parse(jsonData);
+      const imports = [];
+      
+      for (const [songTitle, data] of Object.entries(labels)) {
+        // Extrair artista e título da string "Artist – Title"
+        const [artist, title] = songTitle.split(' – ');
+        if (!artist || !title) continue;
+        
+        // Buscar a música no banco
+        const { data: songData } = await supabase
+          .from('songs')
+          .select('id')
+          .ilike('artist', `%${artist.trim()}%`)
+          .ilike('title', `%${title.trim()}%`)
+          .limit(1);
+          
+        if (songData && songData.length > 0) {
+          const misogyniaScore = (data as any).categories?.misogyny || 0;
+          imports.push({
+            song_id: songData[0].id,
+            theme: 'Misoginia',
+            score: misogyniaScore,
+            justification: (data as any).notes || null
+          });
+        }
+      }
+      
+      if (imports.length > 0) {
+        const { error } = await supabase
+          .from('manual_labels')
+          .insert(imports);
+          
+        if (error) throw error;
+        
+        toast({
+          title: "Importação Concluída",
+          description: `${imports.length} rótulos importados com sucesso.`,
+        });
+        
+        await loadLabeledCount();
+        await loadSongs();
+      }
+      
+    } catch (error) {
+      console.error('Erro na importação:', error);
+      toast({
+        title: "Erro na Importação",
+        description: "Verifique o formato do JSON.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      importExistingLabels(content);
+    };
+    reader.readAsText(file);
+    
+    // Reset input
+    event.target.value = '';
   };
 
   if (isLoading) {
@@ -173,19 +267,38 @@ const ManualLabeling = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold mb-2">Rotulagem Manual</h2>
+          <h2 className="text-2xl font-bold mb-2">Rotulagem Manual - Misoginia</h2>
           <p className="text-muted-foreground">
-            Classifique as músicas de acordo com o conteúdo inapropriado
+            Classifique as músicas de acordo com o conteúdo misógino
           </p>
         </div>
-        <div className="text-right">
-          <Badge variant="outline" className="mb-2">
-            <CheckCircle className="h-4 w-4 mr-1" />
-            {labeledCount} rotuladas
-          </Badge>
-          <p className="text-sm text-muted-foreground">
-            Música {currentSongIndex + 1} de {songs.length}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <Badge variant="outline" className="mb-2">
+              <CheckCircle className="h-4 w-4 mr-1" />
+              {labeledCount} rotuladas
+            </Badge>
+            <p className="text-sm text-muted-foreground">
+              Música {currentSongIndex + 1} de {songs.length}
+            </p>
+          </div>
+          <div>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleFileImport}
+              className="hidden"
+              id="json-import"
+            />
+            <label htmlFor="json-import">
+              <Button variant="outline" asChild>
+                <span>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar JSON
+                </span>
+              </Button>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -219,24 +332,27 @@ const ManualLabeling = () => {
         {/* Rotulagem */}
         <Card>
           <CardHeader>
-            <CardTitle>Classificação</CardTitle>
+            <CardTitle>Classificação de Misoginia</CardTitle>
             <CardDescription>
-              Atribua uma pontuação de 0 a 100 para o conteúdo inapropriado
+              Atribua um nível e pontuação para conteúdo misógino
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Tema de Análise *
+                Nível de Misoginia *
               </label>
-              <Select value={selectedTheme} onValueChange={setSelectedTheme}>
+              <Select value={severityLevel} onValueChange={handleSeverityChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tema..." />
+                  <SelectValue placeholder="Selecione o nível..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {themes.map(theme => (
-                    <SelectItem key={theme} value={theme}>
-                      {theme}
+                  {severityLevels.map(level => (
+                    <SelectItem key={level.value} value={level.value}>
+                      <div>
+                        <div className="font-medium">{level.label}</div>
+                        <div className="text-xs text-muted-foreground">{level.description}</div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -245,29 +361,30 @@ const ManualLabeling = () => {
 
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Pontuação: {score}/100
+                Pontuação Precisa: {score}/100
               </label>
               <Slider
                 value={[score]}
-                onValueChange={(value) => setScore(value[0])}
+                onValueChange={handleScoreChange}
                 max={100}
                 step={1}
                 className="mb-2"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0 - Sem conteúdo inapropriado</span>
-                <span>100 - Conteúdo extremamente problemático</span>
+                <span>0 - Sem misoginia</span>
+                <span>50 - Moderada</span>
+                <span>100 - Extremamente misógino</span>
               </div>
             </div>
 
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Justificativa (Opcional)
+                Justificativa e Observações
               </label>
               <Textarea
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
-                placeholder="Explique os critérios usados para esta pontuação..."
+                placeholder="Descreva os elementos misóginos identificados, termos específicos, contexto..."
                 rows={4}
               />
             </div>
