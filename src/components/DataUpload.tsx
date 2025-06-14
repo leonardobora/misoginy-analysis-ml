@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Database, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Database, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -63,18 +63,27 @@ const DataUpload = () => {
     }
   };
 
-  const parseCSV = (csvText: string) => {
+  const parseKaggleCSV = (csvText: string) => {
     const lines = csvText.split('\n');
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
     
-    console.log('Headers encontrados:', headers);
+    console.log('Headers do Kaggle encontrados:', headers);
+    
+    // Mapeamento específico para o dataset do Kaggle
+    const expectedHeaders = {
+      artist: 'Artist',
+      title: 'Song Title', 
+      lyrics: 'Lyrics',
+      year: 'Year',
+      rank: 'Rank'
+    };
     
     const songs = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
       
-      // Parse CSV mais robusto para lidar com vírgulas dentro de aspas
+      // Parse CSV robusto para lidar com vírgulas dentro de aspas
       const values = [];
       let current = '';
       let inQuotes = false;
@@ -84,33 +93,37 @@ const DataUpload = () => {
         if (char === '"') {
           inQuotes = !inQuotes;
         } else if (char === ',' && !inQuotes) {
-          values.push(current.trim());
+          values.push(current.trim().replace(/^"|"$/g, ''));
           current = '';
         } else {
           current += char;
         }
       }
-      values.push(current.trim());
+      values.push(current.trim().replace(/^"|"$/g, ''));
       
       if (values.length >= headers.length) {
-        const song: any = {};
+        const songData: any = {};
         headers.forEach((header, index) => {
-          song[header.toLowerCase().replace(/[^a-z0-9]/g, '')] = values[index] || '';
+          songData[header] = values[index] || '';
         });
         
-        // Mapear para nossa estrutura de banco
+        // Mapear para nossa estrutura usando os headers corretos do Kaggle
         const mappedSong = {
-          year: parseInt(song.year) || parseInt(song.ano) || new Date().getFullYear(),
-          rank: parseInt(song.rank) || parseInt(song.ranking) || null,
-          artist: song.artist || song.artista || 'Desconhecido',
-          title: song.title || song.titulo || song.song || 'Sem título',
-          lyrics: song.lyrics || song.letra || song.lyric || ''
+          artist: songData[expectedHeaders.artist] || songData['Artist'] || 'Desconhecido',
+          title: songData[expectedHeaders.title] || songData['Song Title'] || songData['Song'] || 'Sem título',
+          lyrics: songData[expectedHeaders.lyrics] || songData['Lyrics'] || '',
+          year: parseInt(songData[expectedHeaders.year] || songData['Year']) || new Date().getFullYear(),
+          rank: parseInt(songData[expectedHeaders.rank] || songData['Rank']) || null
         };
         
-        songs.push(mappedSong);
+        // Validar se tem dados essenciais
+        if (mappedSong.artist !== 'Desconhecido' && mappedSong.title !== 'Sem título') {
+          songs.push(mappedSong);
+        }
       }
     }
     
+    console.log(`${songs.length} músicas válidas processadas`);
     return songs;
   };
 
@@ -132,36 +145,57 @@ const DataUpload = () => {
 
     try {
       const text = await file.text();
-      const songs = parseCSV(text);
+      const songs = parseKaggleCSV(text);
       
-      console.log(`Processando ${songs.length} músicas...`);
+      if (songs.length === 0) {
+        throw new Error('Nenhuma música válida encontrada no arquivo');
+      }
+      
+      console.log(`Processando ${songs.length} músicas válidas...`);
       
       // Upload em lotes para evitar timeouts
-      const batchSize = 50;
+      const batchSize = 100;
       const totalBatches = Math.ceil(songs.length / batchSize);
+      let successCount = 0;
+      let errorCount = 0;
       
       for (let i = 0; i < totalBatches; i++) {
         const start = i * batchSize;
         const end = Math.min(start + batchSize, songs.length);
         const batch = songs.slice(start, end);
         
-        const { error } = await supabase
-          .from('songs')
-          .insert(batch);
-          
-        if (error) {
-          console.error('Erro no lote', i + 1, ':', error);
-          throw error;
+        try {
+          const { error } = await supabase
+            .from('songs')
+            .insert(batch);
+            
+          if (error) {
+            console.error('Erro no lote', i + 1, ':', error);
+            errorCount += batch.length;
+          } else {
+            successCount += batch.length;
+          }
+        } catch (batchError) {
+          console.error('Erro no lote', i + 1, ':', batchError);
+          errorCount += batch.length;
         }
         
         const progress = Math.round(((i + 1) / totalBatches) * 100);
         setUploadProgress(progress);
       }
 
-      toast({
-        title: "Upload Concluído",
-        description: `${songs.length} músicas foram carregadas com sucesso.`,
-      });
+      if (successCount > 0) {
+        toast({
+          title: "Upload Concluído",
+          description: `${successCount} músicas carregadas com sucesso${errorCount > 0 ? ` (${errorCount} com erro)` : ''}.`,
+        });
+      } else {
+        toast({
+          title: "Erro no Upload", 
+          description: "Não foi possível carregar nenhuma música. Verifique as permissões do banco.",
+          variant: "destructive"
+        });
+      }
       
       await loadDatasetStats();
       
@@ -169,13 +203,12 @@ const DataUpload = () => {
       console.error('Erro no upload:', error);
       toast({
         title: "Erro no Upload",
-        description: "Ocorreu um erro ao processar o arquivo. Verifique o formato.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao processar o arquivo.",
         variant: "destructive"
       });
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-      // Reset file input
       event.target.value = '';
     }
   };
@@ -207,6 +240,29 @@ const DataUpload = () => {
         </p>
       </div>
 
+      {/* Expected Format Info */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <Info className="h-5 w-5" />
+            Formato Esperado do CSV
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-blue-700 space-y-2">
+            <p><strong>Colunas obrigatórias:</strong></p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li><code>Artist</code> - Nome do artista</li>
+              <li><code>Song Title</code> - Título da música</li>
+              <li><code>Lyrics</code> - Letra da música</li>
+              <li><code>Year</code> - Ano de lançamento</li>
+              <li><code>Rank</code> - Posição no ranking (opcional)</li>
+            </ul>
+            <p className="mt-3"><strong>Dataset recomendado:</strong> Top 100 Songs & Lyrics By Year (1959–2023) do Kaggle</p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Upload Section */}
       <Card>
         <CardHeader>
@@ -215,7 +271,7 @@ const DataUpload = () => {
             Upload de Dataset CSV
           </CardTitle>
           <CardDescription>
-            Dataset: Top 100 Songs & Lyrics By Year (1959–2023) do Kaggle
+            Carregue o arquivo CSV do dataset do Kaggle
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -223,7 +279,7 @@ const DataUpload = () => {
             <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <p className="text-lg font-medium mb-2">Upload do Dataset CSV</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Formato esperado: year, rank, artist, title, lyrics
+              O sistema irá processar automaticamente as colunas do Kaggle
             </p>
             <input
               type="file"
