@@ -27,31 +27,31 @@ const DataUpload = () => {
 
   const loadDatasetStats = async () => {
     try {
-      const { data: songsCount } = await supabase
+      const { data: songsData, count: songsCount } = await supabase
         .from('songs')
         .select('*', { count: 'exact', head: true });
 
-      const { data: labelsCount } = await supabase
+      const { data: labelsData, count: labelsCount } = await supabase
         .from('manual_labels')
         .select('*', { count: 'exact', head: true });
 
       const stats: Dataset[] = [];
       
-      if (songsCount && songsCount.length > 0) {
+      if (songsCount && songsCount > 0) {
         stats.push({
           id: 1,
           name: "Dataset Principal (Kaggle)",
-          totalSongs: songsCount.length,
+          totalSongs: songsCount,
           status: "Ativo",
           lastUpdate: new Date().toLocaleDateString('pt-BR')
         });
       }
 
-      if (labelsCount && labelsCount.length > 0) {
+      if (labelsCount && labelsCount > 0) {
         stats.push({
           id: 2,
           name: "Rótulos Manuais",
-          totalSongs: labelsCount.length,
+          totalSongs: labelsCount,
           status: "Ativo", 
           lastUpdate: new Date().toLocaleDateString('pt-BR')
         });
@@ -74,13 +74,28 @@ const DataUpload = () => {
       const line = lines[i].trim();
       if (!line) continue;
       
-      // Parse CSV simples - pode precisar de ajustes dependendo do formato exato
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      // Parse CSV mais robusto para lidar com vírgulas dentro de aspas
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim());
       
       if (values.length >= headers.length) {
         const song: any = {};
         headers.forEach((header, index) => {
-          song[header.toLowerCase()] = values[index] || '';
+          song[header.toLowerCase().replace(/[^a-z0-9]/g, '')] = values[index] || '';
         });
         
         // Mapear para nossa estrutura de banco
@@ -160,6 +175,8 @@ const DataUpload = () => {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      // Reset file input
+      event.target.value = '';
     }
   };
 

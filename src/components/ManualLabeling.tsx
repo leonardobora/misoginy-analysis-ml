@@ -131,6 +131,7 @@ const ManualLabeling = () => {
       setCurrentSongIndex(currentSongIndex + 1);
       setScore(0);
       setJustification('');
+      setSelectedTheme('');
     } else {
       toast({
         title: "Rotulagem Completa",
