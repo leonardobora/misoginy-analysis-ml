@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -130,8 +129,8 @@ const ModelTraining = () => {
       const info = cnnModel.getModelInfo();
       setModelInfo(info);
       
-      // Calcular acurácia aproximada
-      const finalLoss = history?.history?.loss?.slice(-1)[0] || 0;
+      // Calcular acurácia aproximada - fix the type issue
+      const finalLoss = Number(history?.history?.loss?.slice(-1)[0] || 0);
       const estimatedAccuracy = Math.max(60, Math.min(95, 90 - (finalLoss * 100)));
       
       setLastTrainingResults({
