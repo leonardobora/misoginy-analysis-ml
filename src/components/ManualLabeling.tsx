@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Music, Save, SkipForward, CheckCircle, Upload, Filter, Calendar } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Music, Save, SkipForward, CheckCircle, Upload, Filter, Calendar, Search, TrendingUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,7 +28,11 @@ const ManualLabeling = () => {
   const [severityLevel, setSeverityLevel] = useState('');
   const [labeledCount, setLabeledCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('recent');
+  const [selectedDecade, setSelectedDecade] = useState<string>('all');
+  const [artistFilter, setArtistFilter] = useState('');
+  const [titleFilter, setTitleFilter] = useState('');
+  const [sortBy, setSortBy] = useState<string>('year_desc');
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string>('');
 
@@ -38,14 +42,30 @@ const ManualLabeling = () => {
     { value: 'alto', label: 'Alto (67-100)', description: 'Conteúdo claramente misógino ou objetificação explícita' }
   ];
 
+  const yearRanges = [
+    { value: 'recent', label: 'Mais Recentes (2010-2023)', description: 'Músicas contemporâneas - maior potencial misógino' },
+    { value: '2000s', label: 'Anos 2000-2009', description: 'Era do hip-hop mainstream' },
+    { value: '1990s', label: 'Anos 1990-1999', description: 'Grunge, rap e pop' },
+    { value: 'classic', label: 'Clássicas (1959-1989)', description: 'Músicas históricas' },
+    { value: 'all', label: 'Todos os Anos', description: 'Sem filtro de período' }
+  ];
+
+  const sortOptions = [
+    { value: 'year_desc', label: 'Ano (Mais Recente)' },
+    { value: 'year_asc', label: 'Ano (Mais Antigo)' },
+    { value: 'artist_asc', label: 'Artista (A-Z)' },
+    { value: 'title_asc', label: 'Título (A-Z)' },
+    { value: 'rank_asc', label: 'Ranking (Melhor Posição)' }
+  ];
+
   useEffect(() => {
     loadSongs();
     loadLabeledCount();
   }, []);
 
   useEffect(() => {
-    filterSongs();
-  }, [songs, selectedYear]);
+    filterAndSortSongs();
+  }, [songs, selectedYear, selectedDecade, artistFilter, titleFilter, sortBy]);
 
   const loadSongs = async () => {
     try {
@@ -61,18 +81,23 @@ const ManualLabeling = () => {
         .from('songs')
         .select('*')
         .not('id', 'in', `(${labeledIds.length > 0 ? labeledIds.join(',') : '0'})`)
-        .order('year', { ascending: true })
-        .limit(500);
+        .order('year', { ascending: false })
+        .limit(1000); // Aumentar limite para mais variedade
 
       if (error) throw error;
       
       setSongs(data || []);
       
       // Extrair anos únicos disponíveis
-      const years = [...new Set((data || []).map(song => song.year))].sort((a, b) => a - b);
+      const years = [...new Set((data || []).map(song => song.year))].sort((a, b) => b - a);
       setAvailableYears(years);
       
       console.log(`${data?.length || 0} músicas carregadas, anos disponíveis:`, years);
+      
+      // Log de músicas recentes para debug
+      const recentSongs = (data || []).filter(song => song.year >= 2010);
+      console.log(`Músicas recentes (2010+): ${recentSongs.length}`);
+      console.log('Exemplos de artistas recentes:', recentSongs.slice(0, 10).map(s => `${s.artist} - ${s.title} (${s.year})`));
       
     } catch (error) {
       console.error('Erro ao carregar músicas:', error);
@@ -86,18 +111,77 @@ const ManualLabeling = () => {
     }
   };
 
-  const filterSongs = () => {
-    let filtered = songs;
+  const filterAndSortSongs = () => {
+    let filtered = [...songs];
     
+    // Filtro por período/ano
     if (selectedYear !== 'all') {
-      filtered = songs.filter(song => song.year === parseInt(selectedYear));
+      switch (selectedYear) {
+        case 'recent':
+          filtered = filtered.filter(song => song.year >= 2010);
+          break;
+        case '2000s':
+          filtered = filtered.filter(song => song.year >= 2000 && song.year <= 2009);
+          break;
+        case '1990s':
+          filtered = filtered.filter(song => song.year >= 1990 && song.year <= 1999);
+          break;
+        case 'classic':
+          filtered = filtered.filter(song => song.year >= 1959 && song.year <= 1989);
+          break;
+      }
+    }
+
+    // Filtro por década específica
+    if (selectedDecade !== 'all') {
+      const decade = parseInt(selectedDecade);
+      filtered = filtered.filter(song => Math.floor(song.year / 10) * 10 === decade);
+    }
+    
+    // Filtro por artista
+    if (artistFilter.trim()) {
+      filtered = filtered.filter(song => 
+        song.artist.toLowerCase().includes(artistFilter.toLowerCase())
+      );
+    }
+    
+    // Filtro por título
+    if (titleFilter.trim()) {
+      filtered = filtered.filter(song => 
+        song.title.toLowerCase().includes(titleFilter.toLowerCase())
+      );
+    }
+    
+    // Ordenação
+    switch (sortBy) {
+      case 'year_desc':
+        filtered.sort((a, b) => b.year - a.year);
+        break;
+      case 'year_asc':
+        filtered.sort((a, b) => a.year - b.year);
+        break;
+      case 'artist_asc':
+        filtered.sort((a, b) => a.artist.localeCompare(b.artist));
+        break;
+      case 'title_asc':
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'rank_asc':
+        filtered.sort((a, b) => (a.rank || 999) - (b.rank || 999));
+        break;
     }
     
     setFilteredSongs(filtered);
     setCurrentSongIndex(0);
     setSelectedSongId('');
     
-    console.log(`Filtro aplicado: ${selectedYear === 'all' ? 'Todos os anos' : selectedYear}, ${filtered.length} músicas`);
+    console.log(`Filtros aplicados - Período: ${selectedYear}, Artista: "${artistFilter}", Título: "${titleFilter}", ${filtered.length} músicas encontradas`);
+    
+    // Log específico para Post Malone
+    const postMalone = filtered.filter(song => song.artist.toLowerCase().includes('post malone'));
+    if (postMalone.length > 0) {
+      console.log('Post Malone encontrado:', postMalone.map(s => `${s.title} (${s.year})`));
+    }
   };
 
   const loadLabeledCount = async () => {
@@ -308,7 +392,7 @@ const ManualLabeling = () => {
   if (filteredSongs.length === 0) {
     return (
       <div className="space-y-6">
-        {/* Header com filtros */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-2">Rotulagem Manual - Misoginia</h2>
@@ -318,33 +402,60 @@ const ManualLabeling = () => {
           </div>
         </div>
 
+        {/* Filtros Avançados */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
-              Filtrar Músicas
+              Filtros Avançados de Seleção
             </CardTitle>
+            <CardDescription>
+              Filtre músicas por período, artista e características específicas
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Filtrar por Ano</label>
+                <label className="text-sm font-medium mb-2 block">
+                  <TrendingUp className="h-4 w-4 inline mr-1" />
+                  Período de Interesse
+                </label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os Anos ({songs.length} músicas)</SelectItem>
-                    {availableYears.map(year => {
-                      const count = songs.filter(song => song.year === year).length;
-                      return (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year} ({count} músicas)
-                        </SelectItem>
-                      );
-                    })}
+                    {yearRanges.map(range => (
+                      <SelectItem key={range.value} value={range.value}>
+                        <div>
+                          <div className="font-medium">{range.label}</div>
+                          <div className="text-xs text-muted-foreground">{range.description}</div>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  <Search className="h-4 w-4 inline mr-1" />
+                  Buscar Artista
+                </label>
+                <Input
+                  placeholder="ex: Post Malone, Drake..."
+                  value={artistFilter}
+                  onChange={(e) => setArtistFilter(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Buscar Título</label>
+                <Input
+                  placeholder="Nome da música..."
+                  value={titleFilter}
+                  onChange={(e) => setTitleFilter(e.target.value)}
+                />
               </div>
             </div>
           </CardContent>
@@ -354,7 +465,7 @@ const ManualLabeling = () => {
           <Music className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">Nenhuma música encontrada</h3>
           <p className="text-muted-foreground">
-            Nenhuma música não rotulada encontrada para o ano selecionado.
+            Ajuste os filtros acima para encontrar músicas específicas ou artistas como Post Malone.
           </p>
         </div>
       </div>
@@ -369,7 +480,7 @@ const ManualLabeling = () => {
         <div>
           <h2 className="text-2xl font-bold mb-2">Rotulagem Manual - Misoginia</h2>
           <p className="text-muted-foreground">
-            Classifique as músicas de acordo com o conteúdo misógino
+            Priorize músicas recentes (2010+) - maior potencial de conteúdo misógino
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -380,7 +491,7 @@ const ManualLabeling = () => {
             </Badge>
             <p className="text-sm text-muted-foreground">
               Música {currentSongIndex + 1} de {filteredSongs.length} 
-              {selectedYear !== 'all' && ` (${selectedYear})`}
+              {selectedYear !== 'all' && ` (${yearRanges.find(r => r.value === selectedYear)?.label})`}
             </p>
           </div>
           <div>
@@ -403,56 +514,102 @@ const ManualLabeling = () => {
         </div>
       </div>
 
-      {/* Filtros e Seleção */}
+      {/* Filtros Avançados */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Seleção de Música
+            Seleção Inteligente de Músicas
           </CardTitle>
+          <CardDescription>
+            Filtre e encontre músicas específicas - priorize conteúdo contemporâneo
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">
-                <Calendar className="h-4 w-4 inline mr-1" />
-                Filtrar por Ano
+                <TrendingUp className="h-4 w-4 inline mr-1" />
+                Período de Interesse
               </label>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os Anos ({songs.length} músicas)</SelectItem>
-                  {availableYears.map(year => {
-                    const count = songs.filter(song => song.year === year).length;
-                    return (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year} ({count} músicas)
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                <Music className="h-4 w-4 inline mr-1" />
-                Selecionar Música Específica
-              </label>
-              <Select value={selectedSongId} onValueChange={handleSongSelection}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha uma música..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredSongs.map((song, index) => (
-                    <SelectItem key={song.id} value={song.id.toString()}>
-                      {song.artist} - {song.title} ({song.year})
+                  {yearRanges.map(range => (
+                    <SelectItem key={range.value} value={range.value}>
+                      <div>
+                        <div className="font-medium">{range.label}</div>
+                        <div className="text-xs text-muted-foreground">{range.description}</div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                <Search className="h-4 w-4 inline mr-1" />
+                Buscar Artista
+              </label>
+              <Input
+                placeholder="ex: Post Malone, Drake, Eminem..."
+                value={artistFilter}
+                onChange={(e) => setArtistFilter(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Buscar Título</label>
+              <Input
+                placeholder="Nome da música..."
+                value={titleFilter}
+                onChange={(e) => setTitleFilter(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Ordenar Por</label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Seleção Direta de Música */}
+          <div className="mt-4">
+            <label className="text-sm font-medium mb-2 block">
+              <Music className="h-4 w-4 inline mr-1" />
+              Selecionar Música Específica
+            </label>
+            <Select value={selectedSongId} onValueChange={handleSongSelection}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolha uma música da lista filtrada..." />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredSongs.slice(0, 100).map((song, index) => (
+                  <SelectItem key={song.id} value={song.id.toString()}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{song.artist} - {song.title}</span>
+                      <Badge variant="outline" className="ml-2">
+                        {song.year}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -465,9 +622,10 @@ const ManualLabeling = () => {
               <Music className="h-5 w-5" />
               {currentSong.title}
             </CardTitle>
-            <CardDescription>
-              {currentSong.artist} • {currentSong.year}
-              {currentSong.rank && ` • Rank #${currentSong.rank}`}
+            <CardDescription className="flex items-center gap-4">
+              <span>{currentSong.artist} • {currentSong.year}</span>
+              {currentSong.rank && <Badge variant="secondary">Rank #{currentSong.rank}</Badge>}
+              {currentSong.year >= 2010 && <Badge className="bg-green-600">Recente</Badge>}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -489,7 +647,7 @@ const ManualLabeling = () => {
           <CardHeader>
             <CardTitle>Classificação de Misoginia</CardTitle>
             <CardDescription>
-              Atribua um nível e pontuação para conteúdo misógino
+              Analise cuidadosamente - músicas recentes podem ter conteúdo mais sutil
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -539,7 +697,7 @@ const ManualLabeling = () => {
               <Textarea
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
-                placeholder="Descreva os elementos misóginos identificados, termos específicos, contexto..."
+                placeholder="Descreva os elementos misóginos identificados, linguagem contemporânea, referências implícitas..."
                 rows={4}
               />
             </div>
