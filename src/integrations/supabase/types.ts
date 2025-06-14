@@ -9,7 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      manual_labels: {
+        Row: {
+          created_at: string
+          id: number
+          justification: string | null
+          score: number
+          song_id: number
+          theme: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          justification?: string | null
+          score: number
+          song_id: number
+          theme: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          justification?: string | null
+          score?: number
+          song_id?: number
+          theme?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_labels_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      songs: {
+        Row: {
+          artist: string | null
+          created_at: string
+          id: number
+          lyrics: string | null
+          rank: number | null
+          title: string
+          year: number
+        }
+        Insert: {
+          artist?: string | null
+          created_at?: string
+          id?: number
+          lyrics?: string | null
+          rank?: number | null
+          title: string
+          year: number
+        }
+        Update: {
+          artist?: string | null
+          created_at?: string
+          id?: number
+          lyrics?: string | null
+          rank?: number | null
+          title?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

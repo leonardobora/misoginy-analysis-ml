@@ -2,11 +2,12 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Music, Database, Brain, BarChart3 } from 'lucide-react';
+import { Music, Database, Brain, BarChart3, Tags } from 'lucide-react';
 import ContentClassifier from '@/components/ContentClassifier';
 import DashboardOverview from '@/components/DashboardOverview';
 import DataUpload from '@/components/DataUpload';
 import ModelTraining from '@/components/ModelTraining';
+import ManualLabeling from '@/components/ManualLabeling';
 
 const Index = () => {
   return (
@@ -29,7 +30,7 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
@@ -41,6 +42,10 @@ const Index = () => {
             <TabsTrigger value="data" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               Dados
+            </TabsTrigger>
+            <TabsTrigger value="labeling" className="flex items-center gap-2">
+              <Tags className="h-4 w-4" />
+              Rotulagem
             </TabsTrigger>
             <TabsTrigger value="training" className="flex items-center gap-2">
               <Brain className="h-4 w-4" />
@@ -58,6 +63,10 @@ const Index = () => {
 
           <TabsContent value="data">
             <DataUpload />
+          </TabsContent>
+
+          <TabsContent value="labeling">
+            <ManualLabeling />
           </TabsContent>
 
           <TabsContent value="training">
