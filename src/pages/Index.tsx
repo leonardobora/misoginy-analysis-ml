@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,10 +10,8 @@ import ModelTraining from '@/components/ModelTraining';
 import ManualLabeling from '@/components/ManualLabeling';
 import ImplementationStatus from '@/components/ImplementationStatus';
 import GroupInfo from '@/components/GroupInfo';
-
 const Index = () => {
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
+  return <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
@@ -90,9 +87,7 @@ const Index = () => {
       <footer className="border-t bg-card py-4">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              © 2024 UniBrasil Centro Universitário - Engenharia de Software
-            </div>
+            <div className="text-sm text-muted-foreground">© 2025 UniBrasil Centro Universitário - Engenharia de Software</div>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -107,8 +102,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
