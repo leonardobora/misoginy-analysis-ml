@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Play, Square, Settings, TrendingUp, Clock, Database, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { cnnModel } from '@/services/CNNModel';
+import { cnnModel } from '@/services/MisogynyCNNModel';
 
 const ModelTraining = () => {
   const [isTraining, setIsTraining] = useState(false);

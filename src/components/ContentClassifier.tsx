@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Music, Brain, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { cnnModel, PredictionResult } from '@/services/CNNModel';
+import { cnnModel } from '@/services/MisogynyCNNModel';
+import { PredictionResult } from '@/types/ModelTypes';
 
 const ContentClassifier = () => {
   const [inputText, setInputText] = useState('');
