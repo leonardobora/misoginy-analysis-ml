@@ -68,6 +68,12 @@ const ModelTraining = () => {
       
       setDatasetBalance({ lowCount, midCount, highCount, total: formattedData.length });
       
+      // Verificar se dataset está muito desbalanceado
+      const isUnbalanced = lowCount > formattedData.length * 0.7;
+      if (isUnbalanced) {
+        console.warn('Dataset desbalanceado detectado');
+      }
+      
       console.log(`Dataset carregado: ${formattedData.length} amostras (${lowCount} baixo, ${midCount} médio, ${highCount} alto)`);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -266,7 +272,7 @@ const ModelTraining = () => {
                   <div className="text-yellow-600">{datasetBalance.midCount} amostras</div>
                 </div>
                 <div>
-                  <div className="font-medium">Alto (>0.7)</div>
+                  <div className="font-medium">Alto ({'>'}0.7)</div>
                   <div className="text-green-600">{datasetBalance.highCount} amostras</div>
                 </div>
               </div>
