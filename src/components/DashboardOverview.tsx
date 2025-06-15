@@ -291,62 +291,6 @@ const DashboardOverview = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* System Requirements Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            Status dos Requisitos
-          </CardTitle>
-          <CardDescription>
-            Verificação dos critérios do professor
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                {systemStats.totalSongs > 0 ? 
-                  <CheckCircle className="h-4 w-4 text-green-600" /> : 
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                }
-                <span className="text-sm">Dataset Kaggle carregado</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {systemStats.labeledSongs >= 30 ? 
-                  <CheckCircle className="h-4 w-4 text-green-600" /> : 
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                }
-                <span className="text-sm">Rotulagem manual (mín. 30)</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Execução 100% local</span>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Algoritmo CNN implementado</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Detecção de misoginia</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm">Pontuação contínua 0-1</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

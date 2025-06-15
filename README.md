@@ -11,6 +11,10 @@ Criar um modelo de classificação automática que analisa letras de músicas e 
 - **0**: música sem conteúdo inapropriado
 - **1**: letra com conteúdo flagrantemente misógino
 
+## 🏫 Instituição de Ensino
+
+**UniBrasil Centro Universitário**
+
 ## 👥 Equipe de Desenvolvimento
 
 **Curso:** Engenharia de Software - 7º Período - Turma B
@@ -30,7 +34,6 @@ Criar um modelo de classificação automática que analisa letras de músicas e 
 - **Machine Learning:** TensorFlow.js (CNN)
 - **Database:** Supabase (PostgreSQL)
 - **Build Tool:** Vite
-- **Deployment:** Lovable Platform
 
 ## 🏗️ Arquitetura do Sistema
 
@@ -53,40 +56,129 @@ Criar um modelo de classificação automática que analisa letras de músicas e 
    - Tokenização e vetorização
    - Validação e limpeza
 
-## 📦 Instalação e Configuração
+## 💻 Instalação e Configuração Local
 
 ### Pré-requisitos
 
-- Node.js 18+ 
-- npm ou yarn
-- Conta no Supabase (opcional)
+#### Windows
+- **Node.js 18+**: [Download](https://nodejs.org/)
+- **Git**: [Download](https://git-scm.com/download/win)
+- **VSCode** (recomendado): [Download](https://code.visualstudio.com/)
 
-### Instalação Local
-
+#### Linux (Ubuntu/Debian)
 ```bash
-# 1. Clone o repositório
-git clone <URL_DO_REPOSITORIO>
-cd sistema-classificacao-musical
+# Atualizar repositórios
+sudo apt update
 
-# 2. Instale as dependências
-npm install
+# Instalar Node.js 18+
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-# 3. Configure as variáveis de ambiente
-cp .env.example .env.local
-# Edite o arquivo .env.local com suas configurações
+# Instalar Git
+sudo apt install git
 
-# 4. Inicie o servidor de desenvolvimento
-npm run dev
-
-# 5. Acesse http://localhost:8080
+# Verificar instalações
+node --version
+npm --version
+git --version
 ```
 
-### Configuração do Supabase (Opcional)
-
+#### Linux (CentOS/RHEL/Fedora)
 ```bash
-# Variáveis necessárias no .env.local
+# Instalar Node.js 18+
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+
+# Instalar Git
+sudo yum install git
+```
+
+### Instalação do Projeto
+
+#### 1. Clone o Repositório
+```bash
+# Clone o projeto
+git clone https://github.com/[SEU_USUARIO]/sistema-classificacao-musical.git
+cd sistema-classificacao-musical
+```
+
+#### 2. Instale as Dependências
+```bash
+# Instalar dependências do projeto
+npm install
+
+# Aguarde a instalação (pode demorar alguns minutos)
+```
+
+#### 3. Configure as Variáveis de Ambiente
+```bash
+# Windows (PowerShell)
+copy .env.example .env.local
+
+# Linux/Mac
+cp .env.example .env.local
+```
+
+Edite o arquivo `.env.local` com um editor de texto:
+
+```env
+# Configurações do Supabase (Opcional)
 VITE_SUPABASE_URL=sua_url_do_supabase
 VITE_SUPABASE_ANON_KEY=sua_chave_anonima
+
+# Configurações de desenvolvimento
+VITE_ENV=development
+```
+
+**Nota:** O sistema funciona sem Supabase, usando armazenamento local do navegador.
+
+#### 4. Execute o Projeto
+
+```bash
+# Iniciar servidor de desenvolvimento
+npm run dev
+```
+
+Aguarde a mensagem:
+```
+Local:   http://localhost:8080
+Network: http://192.168.x.x:8080
+```
+
+#### 5. Acesse o Sistema
+- Abra seu navegador
+- Acesse: `http://localhost:8080`
+- O sistema deve carregar com todas as funcionalidades
+
+### Solução de Problemas Comuns
+
+#### Windows
+```powershell
+# Se houver erro de permissão no PowerShell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Se npm install falhar
+npm cache clean --force
+npm install
+```
+
+#### Linux
+```bash
+# Se houver problemas de permissão
+sudo chown -R $(whoami) ~/.npm
+
+# Se faltar dependências nativas
+sudo apt install build-essential
+
+# Limpar cache se necessário
+npm cache clean --force
+```
+
+#### Problemas de Porta
+Se a porta 8080 estiver ocupada:
+```bash
+# Usar porta alternativa
+npm run dev -- --port 3000
 ```
 
 ## 🎵 Dataset
@@ -243,4 +335,4 @@ Este é um projeto acadêmico fechado. Para dúvidas ou sugestões, entre em con
 
 ---
 
-**Desenvolvido com ❤️ pela equipe de Engenharia de Software - UFPR 2024**
+**Desenvolvido com ❤️ pela equipe de Engenharia de Software - UniBrasil Centro Universitário 2024**

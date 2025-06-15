@@ -1,7 +1,9 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Music, Database, Brain, BarChart3, Tags, Activity, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Music, Database, Brain, BarChart3, Tags, Users, Activity } from 'lucide-react';
 import ContentClassifier from '@/components/ContentClassifier';
 import DashboardOverview from '@/components/DashboardOverview';
 import DataUpload from '@/components/DataUpload';
@@ -12,7 +14,7 @@ import GroupInfo from '@/components/GroupInfo';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
@@ -29,16 +31,12 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <Tabs defaultValue="grupo" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="grupo" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Grupo
-            </TabsTrigger>
-            <TabsTrigger value="status" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Status
             </TabsTrigger>
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -66,10 +64,6 @@ const Index = () => {
             <GroupInfo />
           </TabsContent>
 
-          <TabsContent value="status">
-            <ImplementationStatus />
-          </TabsContent>
-
           <TabsContent value="dashboard">
             <DashboardOverview />
           </TabsContent>
@@ -91,6 +85,28 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t bg-card py-4">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              © 2024 UniBrasil Centro Universitário - Engenharia de Software
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Status do Projeto
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <ImplementationStatus />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
