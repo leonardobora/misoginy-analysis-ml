@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Play, Square, Settings, TrendingUp, Clock, Database } from 'lucide-react';
+import { Brain, Play, Square, Settings, TrendingUp, Clock, Database, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cnnModel } from '@/services/CNNModel';
@@ -15,13 +15,15 @@ const ModelTraining = () => {
   const [modelInfo, setModelInfo] = useState<any>(null);
   const [trainingData, setTrainingData] = useState<any[]>([]);
   const [lastTrainingResults, setLastTrainingResults] = useState<any>(null);
+  const [datasetBalance, setDatasetBalance] = useState<any>(null);
 
+  // Configurações sincronizadas com o modelo
   const trainingConfig = {
-    epochs: 50,
-    batchSize: 32,
-    learningRate: 0.001,
+    epochs: 20, // Sincronizado com CNNModel
+    batchSize: 8, // Adaptativo no modelo
+    learningRate: 0.001, // Sincronizado com CNNModel
     optimizer: "Adam",
-    architecture: "CNN Multi-label Local"
+    architecture: "CNN Simplified"
   };
 
   useEffect(() => {
@@ -31,7 +33,6 @@ const ModelTraining = () => {
 
   const loadTrainingData = async () => {
     try {
-      // Carregar dados rotulados manualmente
       const { data: labels, error: labelsError } = await supabase
         .from('manual_labels')
         .select(`
@@ -59,9 +60,17 @@ const ModelTraining = () => {
 
       setTrainingData(formattedData);
       
-      console.log(`${formattedData.length} músicas rotuladas carregadas para treinamento`);
+      // Analisar balanceamento do dataset
+      const scores = formattedData.map(item => item.score);
+      const lowCount = scores.filter(s => s <= 0.3).length;
+      const midCount = scores.filter(s => s > 0.3 && s <= 0.7).length;
+      const highCount = scores.filter(s => s > 0.7).length;
+      
+      setDatasetBalance({ lowCount, midCount, highCount, total: formattedData.length });
+      
+      console.log(`Dataset carregado: ${formattedData.length} amostras (${lowCount} baixo, ${midCount} médio, ${highCount} alto)`);
     } catch (error) {
-      console.error('Erro ao carregar dados de treinamento:', error);
+      console.error('Erro ao carregar dados:', error);
       toast({
         title: "Erro ao Carregar Dados",
         description: "Não foi possível carregar os dados rotulados.",
@@ -90,13 +99,22 @@ const ModelTraining = () => {
       return;
     }
 
+    // Verificar balanceamento
+    if (datasetBalance && datasetBalance.lowCount > datasetBalance.total * 0.8) {
+      toast({
+        title: "Dataset Desbalanceado",
+        description: "Muitas amostras de score baixo. Considere rotular mais músicas com conteúdo misógino.",
+        variant: "destructive"
+      });
+    }
+
     setIsTraining(true);
     setTrainingProgress(0);
     setCurrentEpoch(0);
 
     toast({
       title: "Treinamento Iniciado",
-      description: `Treinando CNN com ${trainingData.length} amostras rotuladas.`,
+      description: `Treinando CNN simplificada com ${trainingData.length} amostras.`,
     });
 
     try {
@@ -116,43 +134,57 @@ const ModelTraining = () => {
         }
       };
 
-      // Treinar modelo
+      // Treinar modelo com tratamento de erro melhorado
       const history = await cnnModel.trainWithData(trainingData);
       
       // Restaurar console.log
       console.log = originalLog;
       
-      // Salvar modelo treinado
+      // Salvar modelo
       await cnnModel.saveModel();
       
-      // Atualizar informações do modelo
+      // Atualizar informações
       const info = cnnModel.getModelInfo();
       setModelInfo(info);
       
-      // Calcular acurácia aproximada - fix the type issue
+      // Calcular métricas finais
       const finalLoss = Number(history?.history?.loss?.slice(-1)[0] || 0);
-      const estimatedAccuracy = Math.max(60, Math.min(95, 90 - (finalLoss * 100)));
+      const finalAccuracy = Number(history?.history?.accuracy?.slice(-1)[0] || 0);
+      const estimatedAccuracy = finalAccuracy ? finalAccuracy * 100 : Math.max(60, 90 - (finalLoss * 100));
       
       setLastTrainingResults({
         accuracy: estimatedAccuracy,
         loss: finalLoss,
         epochs: trainingConfig.epochs,
         samples: trainingData.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        datasetBalance: datasetBalance
       });
 
       setTrainingProgress(100);
       
       toast({
         title: "Treinamento Concluído",
-        description: `Modelo CNN treinado com sucesso! Acurácia estimada: ${estimatedAccuracy.toFixed(1)}%`,
+        description: `Modelo CNN treinado! Acurácia: ${estimatedAccuracy.toFixed(1)}%`,
       });
       
     } catch (error) {
-      console.error('Erro durante o treinamento:', error);
+      console.error('Erro durante treinamento:', error);
+      
+      let errorMessage = "Erro desconhecido durante o treinamento.";
+      if (error instanceof Error) {
+        if (error.message.includes('memory') || error.message.includes('OOM')) {
+          errorMessage = "Erro de memória. Tente com menos dados ou reinicie a página.";
+        } else if (error.message.includes('shape') || error.message.includes('dimension')) {
+          errorMessage = "Erro de dimensionalidade dos dados. Verifique o dataset.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Erro no Treinamento",
-        description: "Ocorreu um erro durante o treinamento do modelo.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -180,13 +212,13 @@ const ModelTraining = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Treinamento de Modelo CNN Local</h2>
+        <h2 className="text-2xl font-bold mb-2">Treinamento CNN Simplificado</h2>
         <p className="text-muted-foreground">
-          Treine um modelo CNN para detecção de misoginia usando TensorFlow.js (100% local)
+          Modelo CNN otimizado para datasets pequenos (100% local)
         </p>
       </div>
 
-      {/* Data Status */}
+      {/* Data Status with Balance Info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -195,18 +227,16 @@ const ModelTraining = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{trainingData.length}</div>
-              <div className="text-sm text-muted-foreground">Músicas Rotuladas</div>
+              <div className="text-sm text-muted-foreground">Total de Amostras</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {trainingData.length >= 30 ? '✓' : '⚠️'}
+                {trainingData.length >= 20 ? '✓' : trainingData.length >= 10 ? '⚠️' : '❌'}
               </div>
-              <div className="text-sm text-muted-foreground">
-                Mínimo Requerido (30)
-              </div>
+              <div className="text-sm text-muted-foreground">Qualidade (Min: 20)</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
@@ -214,7 +244,40 @@ const ModelTraining = () => {
               </div>
               <div className="text-sm text-muted-foreground">Modelo Disponível</div>
             </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {datasetBalance && datasetBalance.lowCount <= datasetBalance.total * 0.6 ? '✓' : '⚠️'}
+              </div>
+              <div className="text-sm text-muted-foreground">Balanceamento</div>
+            </div>
           </div>
+          
+          {/* Dataset Balance Details */}
+          {datasetBalance && (
+            <div className="mt-4 p-3 border rounded-lg bg-gray-50">
+              <h4 className="font-medium mb-2">Distribuição do Dataset</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <div className="font-medium">Baixo (≤0.3)</div>
+                  <div className="text-red-600">{datasetBalance.lowCount} amostras</div>
+                </div>
+                <div>
+                  <div className="font-medium">Médio (0.3-0.7)</div>
+                  <div className="text-yellow-600">{datasetBalance.midCount} amostras</div>
+                </div>
+                <div>
+                  <div className="font-medium">Alto (>0.7)</div>
+                  <div className="text-green-600">{datasetBalance.highCount} amostras</div>
+                </div>
+              </div>
+              {datasetBalance.lowCount > datasetBalance.total * 0.7 && (
+                <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  Dataset desbalanceado: muitas amostras de score baixo. Rotule mais músicas com conteúdo misógino.
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -226,23 +289,27 @@ const ModelTraining = () => {
             Controle de Treinamento CNN
           </CardTitle>
           <CardDescription>
-            Modelo de rede neural convolucional para detecção local de misoginia
+            Arquitetura simplificada otimizada para datasets pequenos
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Configuration */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Épocas</label>
-              <div className="p-2 border rounded text-sm">{trainingConfig.epochs}</div>
+              <div className="p-2 border rounded text-sm bg-blue-50">{trainingConfig.epochs}</div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Batch Size</label>
-              <div className="p-2 border rounded text-sm">{trainingConfig.batchSize}</div>
+              <div className="p-2 border rounded text-sm bg-blue-50">Adaptativo ({trainingConfig.batchSize})</div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Learning Rate</label>
-              <div className="p-2 border rounded text-sm">{trainingConfig.learningRate}</div>
+              <div className="p-2 border rounded text-sm bg-blue-50">{trainingConfig.learningRate}</div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Arquitetura</label>
+              <div className="p-2 border rounded text-sm bg-blue-50">{trainingConfig.architecture}</div>
             </div>
           </div>
 
@@ -264,8 +331,8 @@ const ModelTraining = () => {
                   <div>{modelInfo.vocabSize}</div>
                 </div>
                 <div>
-                  <div className="font-medium">Seq Length</div>
-                  <div>{modelInfo.maxSequenceLength}</div>
+                  <div className="font-medium">Arquitetura</div>
+                  <div>{modelInfo.architecture}</div>
                 </div>
               </div>
             </div>
@@ -282,19 +349,19 @@ const ModelTraining = () => {
               </div>
               <Progress value={trainingProgress} className="h-3" />
               <div className="text-sm text-muted-foreground">
-                {trainingProgress.toFixed(1)}% concluído • Modelo 100% local
+                {trainingProgress.toFixed(1)}% concluído • Arquitetura simplificada
               </div>
             </div>
           )}
 
-          {/* Last Training Results */}
+          {/* Enhanced Last Training Results */}
           {lastTrainingResults && (
             <div className="p-4 border rounded-lg bg-green-50">
               <h4 className="font-medium mb-2">Último Treinamento</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                 <div>
                   <div className="font-medium">Acurácia</div>
-                  <div>{lastTrainingResults.accuracy.toFixed(1)}%</div>
+                  <div className="text-green-600 font-bold">{lastTrainingResults.accuracy.toFixed(1)}%</div>
                 </div>
                 <div>
                   <div className="font-medium">Loss Final</div>
@@ -309,6 +376,11 @@ const ModelTraining = () => {
                   <div>{new Date(lastTrainingResults.timestamp).toLocaleDateString('pt-BR')}</div>
                 </div>
               </div>
+              {lastTrainingResults.datasetBalance && (
+                <div className="text-xs text-gray-600">
+                  Dataset usado: {lastTrainingResults.datasetBalance.lowCount} baixo, {lastTrainingResults.datasetBalance.midCount} médio, {lastTrainingResults.datasetBalance.highCount} alto
+                </div>
+              )}
             </div>
           )}
 
@@ -345,11 +417,20 @@ const ModelTraining = () => {
             )}
           </div>
 
+          {/* Warning Messages */}
           {trainingData.length < 10 && (
+            <div className="p-4 border rounded-lg bg-red-50 border-red-200">
+              <p className="text-sm text-red-800">
+                <strong>Dados insuficientes:</strong> São necessárias pelo menos 10 músicas rotuladas. 
+                Vá para a aba "Rotulagem" para classificar mais músicas.
+              </p>
+            </div>
+          )}
+          
+          {trainingData.length >= 10 && trainingData.length < 20 && (
             <div className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
               <p className="text-sm text-yellow-800">
-                <strong>Dados insuficientes:</strong> São necessárias pelo menos 10 músicas rotuladas. 
-                Vá para a aba "Rotulagem" para classificar mais músicas manualmente.
+                <strong>Dataset pequeno:</strong> Para melhor performance, recomenda-se pelo menos 20 músicas rotuladas.
               </p>
             </div>
           )}

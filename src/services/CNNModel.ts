@@ -11,158 +11,110 @@ export class MisogynyCNNModel {
   private model: tf.LayersModel | null = null;
   private tokenizer: Map<string, number> = new Map();
   private maxSequenceLength = 100;
-  private vocabSize = 10000;
+  private vocabSize = 5000; // Reduzido para ser mais gerenciável
 
   constructor() {
     this.initializeTokenizer();
   }
 
   private initializeTokenizer() {
-    // Vocabulário expandido para detecção de misoginia
+    // Vocabulário focado e balanceado para detecção de misoginia
     const misogynyWords = [
-      // Termos explícitos de objetificação
-      'bitch', 'bitches', 'slut', 'sluts', 'whore', 'whores', 'hoe', 'hoes', 'thot', 'thots',
-      'skank', 'skanks', 'tramp', 'tramps', 'cunt', 'cunts', 'pussy', 'pussies',
+      // Termos explícitos mais comuns
+      'bitch', 'bitches', 'slut', 'sluts', 'whore', 'whores', 'hoe', 'hoes', 'thot',
+      'skank', 'tramp', 'cunt', 'pussy', 'fuckin', 'fucking', 'fuck', 'fucked',
       
-      // Objetificação e propriedade
-      'object', 'toy', 'property', 'belong', 'belongs', 'owns', 'owned', 'control', 'controls',
-      'possess', 'possession', 'mine', 'my bitch', 'my ho', 'my girl',
+      // Objetificação
+      'object', 'toy', 'belong', 'owns', 'owned', 'control', 'possess', 'mine',
       
-      // Comandos de submissão
-      'shut', 'quiet', 'silence', 'submit', 'submits', 'obey', 'obeys', 'kitchen', 'cook',
-      'serve', 'serves', 'bow down', 'get down', 'on your knees',
+      // Comandos/submissão
+      'shut', 'quiet', 'submit', 'obey', 'kitchen', 'serve', 'bow',
       
-      // Estereótipos negativos
-      'weak', 'weaker', 'emotional', 'emotions', 'crazy', 'psycho', 'dramatic', 'drama',
-      'irrational', 'stupid', 'dumb', 'blonde', 'airhead',
+      // Estereótipos
+      'weak', 'emotional', 'crazy', 'psycho', 'dramatic', 'irrational', 'stupid', 'dumb',
       
-      // Exploração financeira/material
-      'gold', 'digger', 'diggers', 'money', 'cash', 'pay', 'buy', 'purchase', 'shopping',
-      'expensive', 'credit card', 'sugar daddy',
-      
-      // Manipulação e mentira
-      'user', 'users', 'manipulative', 'manipulate', 'lying', 'lies', 'fake', 'faking',
-      'pretend', 'pretends', 'trick', 'tricks', 'deceive', 'deceives',
-      
-      // Violência e agressão
-      'hit', 'hits', 'slap', 'slaps', 'beat', 'beats', 'hurt', 'hurts', 'violence', 'violent',
-      'force', 'forced', 'grab', 'grabs', 'choke', 'chokes', 'smack', 'smacks',
-      
-      // Termos sexuais objetificantes
-      'fuck', 'fucked', 'fucking', 'fuckin', 'bang', 'banged', 'banging', 'smash', 'smashed',
-      'pound', 'pounded', 'drill', 'drilled', 'nail', 'nailed', 'tap', 'tapped',
-      'dick', 'cock', 'penis', 'balls', 'nuts', 'suck', 'sucked', 'sucking', 'blow',
-      'tits', 'boobs', 'ass', 'butt', 'booty', 'pussy', 'vagina', 'clit',
+      // Sexuais objetificantes
+      'bang', 'banged', 'smash', 'pound', 'drill', 'nail', 'tap', 'dick', 'cock',
+      'suck', 'blow', 'tits', 'boobs', 'ass', 'booty',
       
       // Gírias contemporâneas
-      'thirsty', 'basic', 'ratchet', 'ghetto', 'hood rat', 'side chick', 'main chick',
-      'baby mama', 'baby momma', 'trap queen', 'ride or die', 'down ass bitch',
+      'thirsty', 'basic', 'ratchet', 'hood', 'trap', 'side', 'main',
       
-      // Redução a aparência física
-      'hot', 'sexy', 'fine', 'thick', 'slim', 'skinny', 'fat', 'ugly', 'pretty face',
-      'body', 'curves', 'shape', 'figure', 'legs', 'hips', 'waist',
+      // Controle/dominação
+      'boss', 'master', 'daddy', 'pimp', 'player', 'handle', 'manage', 'train', 'break',
       
-      // Termos de controle e dominação
-      'boss', 'master', 'daddy', 'pimp', 'player', 'mack', 'game', 'control',
-      'handle', 'manage', 'train', 'break', 'tame', 'discipline',
+      // Múltiplas parceiras
+      'rotation', 'options', 'backup', 'collection', 'roster', 'stable',
       
-      // Múltiplas parceiras (objetificação)
-      'harem', 'rotation', 'options', 'backup', 'spare', 'collection', 'roster',
-      'stable', 'team', 'crew', 'squad', 'girls', 'ladies', 'females',
-      
-      // Negação de valor além do sexual
-      'only good for', 'just for', 'nothing but', 'all she is', 'worthless',
-      'useless', 'good for nothing', 'waste', 'trash', 'garbage'
+      // Desvalorização
+      'worthless', 'useless', 'trash', 'garbage', 'nothing'
     ];
 
-    // Palavras neutras e positivas para balanceamento
+    // Palavras neutras para balanceamento
     const neutralWords = [
-      'love', 'heart', 'beautiful', 'amazing', 'wonderful', 'awesome', 'great',
-      'respect', 'equal', 'equality', 'partner', 'friend', 'support', 'care',
-      'dream', 'hope', 'future', 'together', 'happiness', 'joy', 'peace',
-      'music', 'song', 'dance', 'party', 'celebration', 'fun', 'good',
-      'family', 'mother', 'father', 'sister', 'brother', 'home', 'life',
-      'work', 'job', 'school', 'learn', 'study', 'book', 'read', 'write',
-      'sun', 'moon', 'star', 'sky', 'earth', 'water', 'fire', 'air',
-      'happy', 'smile', 'laugh', 'cry', 'feel', 'think', 'know', 'see'
+      'love', 'heart', 'beautiful', 'amazing', 'wonderful', 'great', 'respect',
+      'equal', 'partner', 'friend', 'support', 'care', 'dream', 'hope', 'future',
+      'together', 'happiness', 'joy', 'peace', 'music', 'song', 'dance', 'party',
+      'family', 'mother', 'father', 'home', 'life', 'work', 'school', 'learn',
+      'happy', 'smile', 'laugh', 'feel', 'think', 'know', 'see', 'good', 'nice'
     ];
 
     // Construir tokenizer
-    let tokenIndex = 1; // 0 reservado para padding
+    let tokenIndex = 2; // 0=padding, 1=unknown
     
-    // Adicionar palavras misóginas com peso maior
     misogynyWords.forEach(word => {
       this.tokenizer.set(word.toLowerCase(), tokenIndex++);
     });
     
-    // Adicionar palavras neutras
     neutralWords.forEach(word => {
       this.tokenizer.set(word.toLowerCase(), tokenIndex++);
     });
 
-    console.log(`Tokenizer inicializado com ${this.tokenizer.size} palavras (${misogynyWords.length} misóginas, ${neutralWords.length} neutras)`);
+    console.log(`Tokenizer inicializado com ${this.tokenizer.size} palavras`);
   }
 
   async createModel(): Promise<void> {
-    console.log('Criando modelo CNN aprimorado para detecção de misoginia...');
+    console.log('Criando modelo CNN simplificado...');
 
+    // Arquitetura simplificada para dataset pequeno
     this.model = tf.sequential({
       layers: [
-        // Camada de embedding com dimensão maior
+        // Embedding menor
         tf.layers.embedding({
           inputDim: this.vocabSize,
-          outputDim: 256,
+          outputDim: 128, // Reduzido de 256
           inputLength: this.maxSequenceLength,
           name: 'embedding'
         }),
 
-        // Múltiplas camadas convolucionais para diferentes n-gramas
+        // Uma única camada convolucional
         tf.layers.conv1d({
-          filters: 128,
-          kernelSize: 2,
-          activation: 'relu',
-          name: 'conv1d_bigrams'
-        }),
-        tf.layers.maxPooling1d({ poolSize: 2, name: 'maxpool_bigrams' }),
-
-        tf.layers.conv1d({
-          filters: 128,
+          filters: 64, // Reduzido de 128
           kernelSize: 3,
           activation: 'relu',
-          name: 'conv1d_trigrams'
+          name: 'conv1d_main'
         }),
-        tf.layers.maxPooling1d({ poolSize: 2, name: 'maxpool_trigrams' }),
+        tf.layers.maxPooling1d({ poolSize: 2, name: 'maxpool_main' }),
 
-        tf.layers.conv1d({
-          filters: 64,
-          kernelSize: 4,
-          activation: 'relu',
-          name: 'conv1d_4grams'
-        }),
-        tf.layers.globalMaxPooling1d({ name: 'global_max_pooling' }),
+        // Global pooling
+        tf.layers.globalMaxPooling1d({ name: 'global_pooling' }),
 
-        // Camadas densas com dropout para regularização
+        // Camadas densas simplificadas
         tf.layers.dense({
-          units: 256,
+          units: 64, // Reduzido de 256
           activation: 'relu',
           name: 'dense_1'
         }),
-        tf.layers.dropout({ rate: 0.5, name: 'dropout_1' }),
+        tf.layers.dropout({ rate: 0.3, name: 'dropout_1' }), // Reduzido de 0.5
         
         tf.layers.dense({
-          units: 128,
+          units: 32, // Reduzido de 128
           activation: 'relu',
           name: 'dense_2'
         }),
-        tf.layers.dropout({ rate: 0.3, name: 'dropout_2' }),
+        tf.layers.dropout({ rate: 0.2, name: 'dropout_2' }), // Reduzido de 0.3
         
-        tf.layers.dense({
-          units: 64,
-          activation: 'relu',
-          name: 'dense_3'
-        }),
-        
-        // Camada de saída (regressão - score 0 a 1)
+        // Saída
         tf.layers.dense({
           units: 1,
           activation: 'sigmoid',
@@ -171,39 +123,32 @@ export class MisogynyCNNModel {
       ]
     });
 
-    // Compilar modelo com learning rate menor
+    // Configuração otimizada
     this.model.compile({
-      optimizer: tf.train.adam(0.0005),
-      loss: 'meanSquaredError',
-      metrics: ['mae']
+      optimizer: tf.train.adam(0.001), // Learning rate padrão
+      loss: 'binaryCrossentropy', // Melhor para classificação binária
+      metrics: ['accuracy']
     });
 
-    console.log('Modelo CNN aprimorado criado com sucesso!');
-    console.log('Arquitetura do modelo:');
+    console.log('Modelo CNN simplificado criado!');
     this.model.summary();
   }
 
   private preprocessText(text: string): number[] {
-    console.log('Preprocessando texto:', text.substring(0, 100) + '...');
+    console.log('Preprocessando texto...');
     
-    // Normalização mais robusta
+    // Normalização robusta
     let normalizedText = text.toLowerCase()
-      // Expandir contrações
       .replace(/fuckin'/g, 'fucking')
-      .replace(/talkin'/g, 'talking')
-      .replace(/nothin'/g, 'nothing')
-      .replace(/somethin'/g, 'something')
       .replace(/\bho\b/g, 'whore')
       .replace(/\bu\b/g, 'you')
       .replace(/\bur\b/g, 'your')
-      // Remover caracteres especiais mas manter espaços
       .replace(/[^\w\s]/g, ' ')
-      // Normalizar espaços
       .replace(/\s+/g, ' ')
       .trim();
 
     const words = normalizedText.split(' ').filter(word => word.length > 0);
-    console.log('Palavras extraídas:', words.slice(0, 20));
+    console.log(`Processando ${words.length} palavras`);
 
     const sequence: number[] = [];
     let recognizedWords = 0;
@@ -213,16 +158,15 @@ export class MisogynyCNNModel {
       if (tokenId) {
         sequence.push(tokenId);
         recognizedWords++;
-        console.log(`Palavra reconhecida: "${word}" -> token ${tokenId}`);
       } else {
-        // Para palavras não reconhecidas, usar token especial
-        sequence.push(1); // token para palavras desconhecidas
+        sequence.push(1); // Token para palavras desconhecidas
       }
     });
 
-    console.log(`Reconhecidas ${recognizedWords} de ${words.length} palavras (${((recognizedWords/words.length)*100).toFixed(1)}%)`);
+    const recognitionRate = (recognizedWords / words.length) * 100;
+    console.log(`Taxa de reconhecimento: ${recognitionRate.toFixed(1)}%`);
 
-    // Padding ou truncamento para tamanho fixo
+    // Padding/truncamento
     if (sequence.length > this.maxSequenceLength) {
       return sequence.slice(0, this.maxSequenceLength);
     } else {
@@ -235,41 +179,70 @@ export class MisogynyCNNModel {
       await this.createModel();
     }
 
-    console.log(`Iniciando treinamento aprimorado com ${trainingData.length} amostras...`);
+    console.log(`Iniciando treinamento com ${trainingData.length} amostras...`);
 
-    // Preparar dados de entrada
-    const sequences = trainingData.map(item => this.preprocessText(item.lyrics));
-    const labels = trainingData.map(item => item.score);
+    // Verificar balanceamento do dataset
+    const scores = trainingData.map(item => item.score);
+    const lowCount = scores.filter(s => s <= 0.3).length;
+    const midCount = scores.filter(s => s > 0.3 && s <= 0.7).length;
+    const highCount = scores.filter(s => s > 0.7).length;
+    
+    console.log(`Dataset: ${lowCount} baixo, ${midCount} médio, ${highCount} alto`);
+    
+    if (lowCount > trainingData.length * 0.8) {
+      console.warn('AVISO: Dataset muito desbalanceado! Maioria são scores baixos.');
+    }
 
-    const xs = tf.tensor2d(sequences);
-    const ys = tf.tensor2d(labels, [labels.length, 1]);
-
-    console.log('Tensores criados:');
-    console.log('Input shape:', xs.shape);
-    console.log('Output shape:', ys.shape);
-    console.log('Labels range:', Math.min(...labels), 'to', Math.max(...labels));
+    let xs: tf.Tensor2D | null = null;
+    let ys: tf.Tensor2D | null = null;
 
     try {
-      // Treinamento com mais épocas e early stopping
+      // Preparar dados
+      const sequences = trainingData.map(item => this.preprocessText(item.lyrics));
+      const labels = trainingData.map(item => item.score);
+
+      xs = tf.tensor2d(sequences);
+      ys = tf.tensor2d(labels, [labels.length, 1]);
+
+      console.log('Tensores criados:', xs.shape, ys.shape);
+
+      // Treinamento com configurações ajustadas
       const history = await this.model!.fit(xs, ys, {
-        epochs: 100,
-        batchSize: 16,
+        epochs: 20, // Reduzido para evitar overfitting
+        batchSize: Math.min(8, trainingData.length), // Batch size adaptativo
         validationSplit: 0.2,
         verbose: 1,
         shuffle: true,
         callbacks: {
           onEpochEnd: (epoch, logs) => {
-            console.log(`Época ${epoch + 1}: loss = ${logs?.loss?.toFixed(4)}, val_loss = ${logs?.val_loss?.toFixed(4)}, mae = ${logs?.mae?.toFixed(4)}`);
+            const loss = logs?.loss?.toFixed(4) || 'N/A';
+            const valLoss = logs?.val_loss?.toFixed(4) || 'N/A';
+            const acc = logs?.accuracy?.toFixed(4) || 'N/A';
+            console.log(`Época ${epoch + 1}: loss=${loss}, val_loss=${valLoss}, acc=${acc}`);
+            
+            // Early stopping simples
+            if (logs?.val_loss && logs.val_loss > (logs.loss || 0) * 2) {
+              console.log('Possível overfitting detectado');
+            }
           }
         }
       });
 
-      console.log('Treinamento aprimorado concluído!');
+      console.log('Treinamento concluído!');
       return history;
+
+    } catch (error) {
+      console.error('Erro durante treinamento:', error);
+      throw error;
     } finally {
-      // Limpar memória
-      xs.dispose();
-      ys.dispose();
+      // Cleanup obrigatório de memória
+      if (xs) xs.dispose();
+      if (ys) ys.dispose();
+      
+      // Forçar garbage collection se disponível
+      if (typeof window !== 'undefined' && (window as any).gc) {
+        (window as any).gc();
+      }
     }
   }
 
@@ -278,12 +251,9 @@ export class MisogynyCNNModel {
       throw new Error('Modelo não foi criado. Execute createModel() primeiro.');
     }
 
-    console.log('=== PREDIÇÃO DETALHADA ===');
-    console.log('Texto original:', lyrics.substring(0, 200) + '...');
-
-    const sequence = this.preprocessText(lyrics);
-    console.log('Sequência processada (primeiros 20 tokens):', sequence.slice(0, 20));
+    console.log('=== PREDIÇÃO ===');
     
+    const sequence = this.preprocessText(lyrics);
     const inputTensor = tf.tensor2d([sequence]);
 
     try {
@@ -291,28 +261,25 @@ export class MisogynyCNNModel {
       const scoreArray = await prediction.data();
       const rawScore = scoreArray[0];
       
-      console.log('Score bruto do modelo:', rawScore);
+      console.log('Score bruto:', rawScore);
       
       // Normalizar score
       const normalizedScore = Math.max(0, Math.min(1, rawScore));
       
-      // Calcular confiança baseada na distância dos extremos
-      const confidence = Math.min(1, Math.abs(normalizedScore - 0.5) * 2 + 0.1);
+      // Confiança baseada na distância dos extremos
+      const confidence = Math.max(0.1, Math.abs(normalizedScore - 0.5) * 2);
 
-      // Determinar categoria com thresholds ajustados
+      // Categorização
       let category: 'baixo' | 'medio' | 'alto';
-      if (normalizedScore <= 0.3) {
+      if (normalizedScore <= 0.35) {
         category = 'baixo';
-      } else if (normalizedScore <= 0.7) {
+      } else if (normalizedScore <= 0.65) {
         category = 'medio';
       } else {
         category = 'alto';
       }
 
-      console.log(`Score normalizado: ${normalizedScore.toFixed(3)}`);
-      console.log(`Confiança: ${confidence.toFixed(3)}`);
-      console.log(`Categoria: ${category}`);
-      console.log('=== FIM PREDIÇÃO ===');
+      console.log(`Score: ${normalizedScore.toFixed(3)}, Categoria: ${category}, Confiança: ${confidence.toFixed(3)}`);
 
       prediction.dispose();
 
@@ -326,21 +293,21 @@ export class MisogynyCNNModel {
     }
   }
 
-  async saveModel(path: string = 'localstorage://misogyny-cnn-model'): Promise<void> {
+  async saveModel(path: string = 'localstorage://misogyny-cnn-simplified'): Promise<void> {
     if (!this.model) {
       throw new Error('Modelo não foi criado.');
     }
 
     await this.model.save(path);
-    console.log(`Modelo aprimorado salvo em: ${path}`);
+    console.log(`Modelo salvo em: ${path}`);
   }
 
-  async loadModel(path: string = 'localstorage://misogyny-cnn-model'): Promise<void> {
+  async loadModel(path: string = 'localstorage://misogyny-cnn-simplified'): Promise<void> {
     try {
       this.model = await tf.loadLayersModel(path);
       console.log(`Modelo carregado de: ${path}`);
     } catch (error) {
-      console.log('Modelo não encontrado, será necessário treinar um novo.');
+      console.log('Modelo não encontrado, criando novo...');
       await this.createModel();
     }
   }
@@ -353,7 +320,7 @@ export class MisogynyCNNModel {
     return {
       totalParams: this.model.countParams(),
       layers: this.model.layers.length,
-      architecture: 'CNN Multi-layer Enhanced',
+      architecture: 'CNN Simplified',
       vocabSize: this.vocabSize,
       maxSequenceLength: this.maxSequenceLength,
       tokenizerSize: this.tokenizer.size
@@ -361,5 +328,5 @@ export class MisogynyCNNModel {
   }
 }
 
-// Instância singleton do modelo
+// Instância singleton
 export const cnnModel = new MisogynyCNNModel();
