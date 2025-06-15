@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 
 export interface PredictionResult {
@@ -255,9 +254,10 @@ export class MisogynyCNNModel {
     
     const sequence = this.preprocessText(lyrics);
     const inputTensor = tf.tensor2d([sequence]);
+    let prediction: tf.Tensor | undefined;
 
     try {
-      const prediction = this.model.predict(inputTensor) as tf.Tensor;
+      prediction = this.model.predict(inputTensor) as tf.Tensor;
       const scoreArray = await prediction.data();
       const rawScore = scoreArray[0];
       
@@ -288,8 +288,8 @@ export class MisogynyCNNModel {
       };
     } finally {
       inputTensor.dispose();
-      if (typeof prediction !== 'undefined') {
-        (prediction as tf.Tensor).dispose();
+      if (prediction) {
+        prediction.dispose();
       }
     }
   }
