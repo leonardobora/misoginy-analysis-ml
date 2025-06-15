@@ -1,73 +1,246 @@
-# Welcome to your Lovable project
 
-## Project info
+# Sistema de Classificação Musical - Detecção de Misoginia
 
-**URL**: https://lovable.dev/projects/966b5256-b4be-4608-807a-205054bf7e08
+## 📋 Sobre o Projeto
 
-## How can I edit this code?
+Sistema desenvolvido para a **Atividade Discente Supervisionada 2 (ADS2)** da disciplina de **Aprendizado de Máquina**, sob orientação do **Prof. Mozart Hasse**. O projeto implementa uma **Rede Neural Convolucional (CNN)** para detectar conteúdo misógino em letras de música do dataset "Top 100 Songs & Lyrics By Year (1959–2023)".
 
-There are several ways of editing your application.
+### 🎯 Objetivo
 
-**Use Lovable**
+Criar um modelo de classificação automática que analisa letras de músicas e atribui uma **pontuação de intensidade de conteúdo misógino** na escala de 0 a 1, onde:
+- **0**: música sem conteúdo inapropriado
+- **1**: letra com conteúdo flagrantemente misógino
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/966b5256-b4be-4608-807a-205054bf7e08) and start prompting.
+## 👥 Equipe de Desenvolvimento
 
-Changes made via Lovable will be committed automatically to this repo.
+**Curso:** Engenharia de Software - 7º Período - Turma B
 
-**Use your preferred IDE**
+| Nome | Papel | Responsabilidades |
+|------|-------|-------------------|
+| **Leonardo Bora** | Desenvolvedor Full-Stack | Arquitetura do sistema, modelagem CNN |
+| **Letícia Campos** | Especialista em ML | Treinamento de modelos, análise de dados |
+| **Carlos Krueger** | Desenvolvedor Frontend | Interface do usuário, visualizações |
+| **Nathan** | Desenvolvedor Backend | APIs, integração de dados |
+| **Luan Constâncio** | Analista de Dados | Rotulagem manual, pré-processamento |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Tecnologias Utilizadas
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend:** React 18 + TypeScript
+- **UI Framework:** Tailwind CSS + shadcn/ui
+- **Machine Learning:** TensorFlow.js (CNN)
+- **Database:** Supabase (PostgreSQL)
+- **Build Tool:** Vite
+- **Deployment:** Lovable Platform
 
-Follow these steps:
+## 🏗️ Arquitetura do Sistema
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Componentes Principais
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. **Interface Web Responsiva**
+   - Dashboard analítico
+   - Classificador em tempo real
+   - Sistema de rotulagem manual
+   - Gerenciamento de dados
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. **Modelo CNN Local**
+   - Arquitetura personalizada para texto
+   - Treinamento 100% local
+   - Predição em tempo real
+   - Armazenamento persistente
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. **Pipeline de Dados**
+   - Pré-processamento de texto
+   - Tokenização e vetorização
+   - Validação e limpeza
+
+## 📦 Instalação e Configuração
+
+### Pré-requisitos
+
+- Node.js 18+ 
+- npm ou yarn
+- Conta no Supabase (opcional)
+
+### Instalação Local
+
+```bash
+# 1. Clone o repositório
+git clone <URL_DO_REPOSITORIO>
+cd sistema-classificacao-musical
+
+# 2. Instale as dependências
+npm install
+
+# 3. Configure as variáveis de ambiente
+cp .env.example .env.local
+# Edite o arquivo .env.local com suas configurações
+
+# 4. Inicie o servidor de desenvolvimento
 npm run dev
+
+# 5. Acesse http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+### Configuração do Supabase (Opcional)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Variáveis necessárias no .env.local
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima
+```
 
-**Use GitHub Codespaces**
+## 🎵 Dataset
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Fonte:** [Top 100 Songs & Lyrics By Year (1959–2023)](https://www.kaggle.com/datasets/brianblakely/top-100-songs-and-lyrics-from-1959-to2019)
 
-## What technologies are used for this project?
+- **Volume:** ~6.500 músicas com letras completas
+- **Período:** 1959-2023 (64 anos de música popular)
+- **Formato:** CSV com colunas: ano, artista, música, letra, posição no ranking
 
-This project is built with:
+## 🤖 Metodologia de ML
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Abordagem CNN para Texto
 
-## How can I deploy this project?
+1. **Pré-processamento:**
+   - Tokenização de texto
+   - Remoção de stopwords
+   - Normalização e limpeza
+   - Vetorização com embeddings
 
-Simply open [Lovable](https://lovable.dev/projects/966b5256-b4be-4608-807a-205054bf7e08) and click on Share -> Publish.
+2. **Arquitetura CNN:**
+   - Camadas convolucionais 1D
+   - Max pooling temporal
+   - Dropout para regularização
+   - Camada densa final para classificação
 
-## Can I connect a custom domain to my Lovable project?
+3. **Treinamento:**
+   - Dataset rotulado manualmente (30+ músicas)
+   - Validação cruzada
+   - Métricas: Acurácia, Precisão, Recall, F1-Score
 
-Yes, you can!
+### Critérios de Rotulagem
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Baseado em literatura acadêmica sobre detecção de misoginia:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- **Baixo (0.0-0.3):** Conteúdo neutro ou positivo
+- **Médio (0.3-0.7):** Linguagem questionável, objetificação sutil
+- **Alto (0.7-1.0):** Conteúdo explicitamente misógino
+
+## 🔧 Como Usar
+
+### 1. Rotulagem Manual
+- Acesse a aba "Rotulagem"
+- Selecione músicas do dataset
+- Atribua pontuações de 0 a 1
+- Salve as classificações
+
+### 2. Treinamento do Modelo
+- Vá para "Treinamento"
+- Configure hiperparâmetros
+- Inicie o treinamento local
+- Monitore métricas em tempo real
+
+### 3. Classificação Automática
+- Use a aba "Classificador"
+- Cole letras de música
+- Obtenha pontuação automática
+- Visualize análise detalhada
+
+### 4. Dashboard Analítico
+- Veja estatísticas gerais
+- Analise tendências temporais
+- Compare resultados
+
+## 📊 Funcionalidades
+
+- ✅ **Classificação em tempo real** com CNN local
+- ✅ **Interface web responsiva** e intuitiva
+- ✅ **Sistema de rotulagem manual** para treinamento
+- ✅ **Dashboard analítico** com visualizações
+- ✅ **Gerenciamento de dataset** completo
+- ✅ **Treinamento local** sem dependências externas
+- ✅ **Métricas de performance** detalhadas
+- ✅ **Armazenamento persistente** de modelos
+
+## 🎯 Requisitos Acadêmicos Atendidos
+
+### Técnicos
+- [x] Algoritmo de redes neurais artificiais (CNN)
+- [x] Execução 100% local (sem serviços externos)
+- [x] Análise exploratória do dataset
+- [x] Rotulagem manual de 30+ músicas
+- [x] Pontuação contínua entre 0 e 1
+- [x] Interface funcional para demonstração
+
+### Documentação
+- [x] Relatório técnico detalhado
+- [x] Justificativas metodológicas com referências
+- [x] Análise de limitações éticas e técnicas
+- [x] Ranking de músicas classificadas
+- [x] Código organizado e comentado
+- [x] Apresentação final
+
+## 🚨 Limitações e Considerações Éticas
+
+### Limitações Técnicas
+- **Contexto:** Modelo não interpreta contexto complexo ou ironia
+- **Tamanho:** Dataset limitado para treinamento robusto
+- **Idioma:** Focado apenas em letras em inglês
+- **Subjetividade:** Misoginia pode ser interpretada diferentemente
+
+### Limitações Éticas
+- **Viés:** Possível viés nos dados de treinamento
+- **Interpretação:** Modelo não considera intenção artística
+- **Contexto Cultural:** Não considera diferenças culturais/temporais
+- **Responsabilidade:** Ferramenta auxiliar, não substitui análise humana
+
+## 📈 Estrutura do Projeto
+
+```
+src/
+├── components/           # Componentes React
+│   ├── ui/              # Componentes de interface
+│   ├── ContentClassifier.tsx
+│   ├── ModelTraining.tsx
+│   ├── ManualLabeling.tsx
+│   └── DashboardOverview.tsx
+├── services/            # Serviços de ML e dados
+│   ├── MisogynyCNNModel.ts
+│   ├── TextPreprocessor.ts
+│   ├── ModelTrainer.ts
+│   └── ModelStorage.ts
+├── types/               # Definições TypeScript
+└── pages/               # Páginas da aplicação
+```
+
+## 🧪 Testes
+
+```bash
+# Executar testes unitários
+npm run test
+
+# Executar testes de integração
+npm run test:integration
+
+# Cobertura de testes
+npm run test:coverage
+```
+
+## 📚 Referências Acadêmicas
+
+1. Zhang, X., Zhao, J., & LeCun, Y. (2015). Character-level convolutional networks for text classification.
+2. Waseem, Z., & Hovy, D. (2016). Hateful symbols or hateful people? Predictive features for hate speech detection on Twitter.
+3. Badjatiya, P., et al. (2017). Deep learning for hate speech detection in tweets.
+4. Davidson, T., et al. (2017). Hate speech detection with a computational approach.
+
+## 📝 Licença
+
+Este projeto foi desenvolvido para fins acadêmicos como parte da disciplina de Aprendizado de Máquina.
+
+## 🤝 Contribuição
+
+Este é um projeto acadêmico fechado. Para dúvidas ou sugestões, entre em contato com a equipe.
+
+---
+
+**Desenvolvido com ❤️ pela equipe de Engenharia de Software - UFPR 2024**

@@ -1,14 +1,14 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Music, Database, Brain, BarChart3, Tags, Activity } from 'lucide-react';
+import { Music, Database, Brain, BarChart3, Tags, Activity, Users } from 'lucide-react';
 import ContentClassifier from '@/components/ContentClassifier';
 import DashboardOverview from '@/components/DashboardOverview';
 import DataUpload from '@/components/DataUpload';
 import ModelTraining from '@/components/ModelTraining';
 import ManualLabeling from '@/components/ManualLabeling';
 import ImplementationStatus from '@/components/ImplementationStatus';
+import GroupInfo from '@/components/GroupInfo';
 
 const Index = () => {
   return (
@@ -30,8 +30,12 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="status" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs defaultValue="grupo" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="grupo" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Grupo
+            </TabsTrigger>
             <TabsTrigger value="status" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Status
@@ -57,6 +61,10 @@ const Index = () => {
               Treinamento
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="grupo">
+            <GroupInfo />
+          </TabsContent>
 
           <TabsContent value="status">
             <ImplementationStatus />
