@@ -335,4 +335,4 @@ Este é um projeto acadêmico fechado. Para dúvidas ou sugestões, entre em con
 
 ---
 
-**Desenvolvido com ❤️ pela equipe de Engenharia de Software - UniBrasil Centro Universitário 2024**
+**Desenvolvido com ❤️ pela equipe de Engenharia de Software - UniBrasil Centro Universitário 2025**
