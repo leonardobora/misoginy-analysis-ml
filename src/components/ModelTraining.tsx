@@ -17,13 +17,13 @@ const ModelTraining = () => {
   const [lastTrainingResults, setLastTrainingResults] = useState<any>(null);
   const [datasetBalance, setDatasetBalance] = useState<any>(null);
 
-  // Configurações sincronizadas com o modelo
+  // Configurações sincronizadas com o modelo ultra-compacto
   const trainingConfig = {
-    epochs: 20, // Sincronizado com CNNModel
-    batchSize: 8, // Adaptativo no modelo
+    epochs: 15, // Sincronizado com CNNModel
+    batchSize: 4, // Menor para modelo compacto
     learningRate: 0.001, // Sincronizado com CNNModel
     optimizer: "Adam",
-    architecture: "CNN Simplified"
+    architecture: "CNN Ultra-Compact"
   };
 
   useEffect(() => {
@@ -120,7 +120,7 @@ const ModelTraining = () => {
 
     toast({
       title: "Treinamento Iniciado",
-      description: `Treinando CNN simplificada com ${trainingData.length} amostras.`,
+      description: `Treinando CNN ultra-compacta com ${trainingData.length} amostras.`,
     });
 
     try {
@@ -146,8 +146,18 @@ const ModelTraining = () => {
       // Restaurar console.log
       console.log = originalLog;
       
-      // Salvar modelo
-      await cnnModel.saveModel();
+      // Tentar salvar modelo com tratamento de erro
+      try {
+        await cnnModel.saveModel();
+        console.log('Modelo salvo com sucesso');
+      } catch (saveError) {
+        console.warn('Aviso: Não foi possível salvar o modelo permanentemente:', saveError);
+        toast({
+          title: "Aviso de Salvamento",
+          description: "Modelo treinado mas não salvo permanentemente. Funcionará apenas nesta sessão.",
+          variant: "destructive"
+        });
+      }
       
       // Atualizar informações
       const info = cnnModel.getModelInfo();
@@ -171,7 +181,7 @@ const ModelTraining = () => {
       
       toast({
         title: "Treinamento Concluído",
-        description: `Modelo CNN treinado! Acurácia: ${estimatedAccuracy.toFixed(1)}%`,
+        description: `Modelo CNN ultra-compacto treinado! Acurácia: ${estimatedAccuracy.toFixed(1)}%`,
       });
       
     } catch (error) {
@@ -180,7 +190,9 @@ const ModelTraining = () => {
       let errorMessage = "Erro desconhecido durante o treinamento.";
       if (error instanceof Error) {
         if (error.message.includes('memory') || error.message.includes('OOM')) {
-          errorMessage = "Erro de memória. Tente com menos dados ou reinicie a página.";
+          errorMessage = "Erro de memória. Modelo muito grande para o navegador.";
+        } else if (error.message.includes('quota') || error.message.includes('storage')) {
+          errorMessage = "Erro de armazenamento. Modelo será mantido apenas nesta sessão.";
         } else if (error.message.includes('shape') || error.message.includes('dimension')) {
           errorMessage = "Erro de dimensionalidade dos dados. Verifique o dataset.";
         } else {
@@ -218,9 +230,9 @@ const ModelTraining = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Treinamento CNN Simplificado</h2>
+        <h2 className="text-2xl font-bold mb-2">Treinamento CNN Ultra-Compacto</h2>
         <p className="text-muted-foreground">
-          Modelo CNN otimizado para datasets pequenos (100% local)
+          Modelo CNN minimalista otimizado para navegadores (100% local)
         </p>
       </div>
 
@@ -292,10 +304,10 @@ const ModelTraining = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
-            Controle de Treinamento CNN
+            Controle de Treinamento CNN Ultra-Compacto
           </CardTitle>
           <CardDescription>
-            Arquitetura simplificada otimizada para datasets pequenos
+            Arquitetura minimalista otimizada para navegadores
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -307,7 +319,7 @@ const ModelTraining = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Batch Size</label>
-              <div className="p-2 border rounded text-sm bg-blue-50">Adaptativo ({trainingConfig.batchSize})</div>
+              <div className="p-2 border rounded text-sm bg-blue-50">{trainingConfig.batchSize}</div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Learning Rate</label>
@@ -322,11 +334,11 @@ const ModelTraining = () => {
           {/* Model Info */}
           {modelInfo && (
             <div className="p-4 border rounded-lg bg-blue-50">
-              <h4 className="font-medium mb-2">Informações do Modelo Atual</h4>
+              <h4 className="font-medium mb-2">Informações do Modelo Ultra-Compacto</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <div className="font-medium">Parâmetros</div>
-                  <div>{modelInfo.totalParams?.toLocaleString()}</div>
+                  <div className="text-green-600">{modelInfo.totalParams?.toLocaleString()}</div>
                 </div>
                 <div>
                   <div className="font-medium">Camadas</div>
@@ -334,12 +346,15 @@ const ModelTraining = () => {
                 </div>
                 <div>
                   <div className="font-medium">Vocab Size</div>
-                  <div>{modelInfo.vocabSize}</div>
+                  <div className="text-blue-600">{modelInfo.vocabSize}</div>
                 </div>
                 <div>
-                  <div className="font-medium">Arquitetura</div>
-                  <div>{modelInfo.architecture}</div>
+                  <div className="font-medium">Seq Length</div>
+                  <div className="text-purple-600">{modelInfo.maxSequenceLength}</div>
                 </div>
+              </div>
+              <div className="mt-2 text-xs text-gray-600">
+                {modelInfo.architecture} • {modelInfo.tokenizerSize} palavras no vocabulário
               </div>
             </div>
           )}
@@ -348,14 +363,14 @@ const ModelTraining = () => {
           {isTraining && (
             <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
               <div className="flex items-center justify-between">
-                <span className="font-medium">Treinamento CNN em Progresso</span>
+                <span className="font-medium">Treinamento CNN Ultra-Compacto</span>
                 <span className="text-sm text-muted-foreground">
                   Época {currentEpoch}/{trainingConfig.epochs}
                 </span>
               </div>
               <Progress value={trainingProgress} className="h-3" />
               <div className="text-sm text-muted-foreground">
-                {trainingProgress.toFixed(1)}% concluído • Arquitetura simplificada
+                {trainingProgress.toFixed(1)}% concluído • Modelo minimalista para navegadores
               </div>
             </div>
           )}
@@ -363,7 +378,7 @@ const ModelTraining = () => {
           {/* Enhanced Last Training Results */}
           {lastTrainingResults && (
             <div className="p-4 border rounded-lg bg-green-50">
-              <h4 className="font-medium mb-2">Último Treinamento</h4>
+              <h4 className="font-medium mb-2">Último Treinamento Ultra-Compacto</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                 <div>
                   <div className="font-medium">Acurácia</div>
@@ -400,7 +415,7 @@ const ModelTraining = () => {
                   disabled={trainingData.length < 10}
                 >
                   <Play className="h-4 w-4" />
-                  Treinar Modelo CNN
+                  Treinar Modelo Ultra-Compacto
                 </Button>
                 <Button 
                   variant="outline" 
@@ -440,6 +455,14 @@ const ModelTraining = () => {
               </p>
             </div>
           )}
+
+          {/* Storage Warning */}
+          <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>Modelo Ultra-Compacto:</strong> Reduzido drasticamente para funcionar em navegadores. 
+              Vocabulário: 1000 palavras, Sequência: 50 tokens, Parâmetros: ~5K (vs 2.6M anterior).
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

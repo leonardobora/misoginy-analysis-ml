@@ -10,59 +10,54 @@ export interface PredictionResult {
 export class MisogynyCNNModel {
   private model: tf.LayersModel | null = null;
   private tokenizer: Map<string, number> = new Map();
-  private maxSequenceLength = 100;
-  private vocabSize = 5000; // Reduzido para ser mais gerenciável
+  private maxSequenceLength = 50; // Reduzido de 100
+  private vocabSize = 1000; // Reduzido drasticamente de 5000
 
   constructor() {
     this.initializeTokenizer();
   }
 
   private initializeTokenizer() {
-    // Vocabulário focado e balanceado para detecção de misoginia
-    const misogynyWords = [
+    // Vocabulário ultra-focado apenas nos termos mais críticos
+    const criticalWords = [
       // Termos explícitos mais comuns
-      'bitch', 'bitches', 'slut', 'sluts', 'whore', 'whores', 'hoe', 'hoes', 'thot',
-      'skank', 'tramp', 'cunt', 'pussy', 'fuckin', 'fucking', 'fuck', 'fucked',
+      'bitch', 'bitches', 'slut', 'sluts', 'whore', 'whores', 'hoe', 'hoes',
+      'skank', 'cunt', 'pussy', 'fuckin', 'fucking', 'fuck',
       
-      // Objetificação
-      'object', 'toy', 'belong', 'owns', 'owned', 'control', 'possess', 'mine',
+      // Objetificação básica
+      'object', 'toy', 'belong', 'owned', 'control', 'mine',
       
-      // Comandos/submissão
-      'shut', 'quiet', 'submit', 'obey', 'kitchen', 'serve', 'bow',
+      // Comandos básicos
+      'shut', 'quiet', 'submit', 'kitchen', 'serve',
       
-      // Estereótipos
-      'weak', 'emotional', 'crazy', 'psycho', 'dramatic', 'irrational', 'stupid', 'dumb',
+      // Estereótipos comuns
+      'weak', 'crazy', 'stupid', 'dumb', 'emotional',
       
       // Sexuais objetificantes
-      'bang', 'banged', 'smash', 'pound', 'drill', 'nail', 'tap', 'dick', 'cock',
-      'suck', 'blow', 'tits', 'boobs', 'ass', 'booty',
+      'bang', 'smash', 'pound', 'drill', 'dick', 'cock',
+      'suck', 'blow', 'tits', 'boobs', 'ass',
       
       // Gírias contemporâneas
-      'thirsty', 'basic', 'ratchet', 'hood', 'trap', 'side', 'main',
+      'basic', 'ratchet', 'thot', 'side', 'main',
       
       // Controle/dominação
-      'boss', 'master', 'daddy', 'pimp', 'player', 'handle', 'manage', 'train', 'break',
-      
-      // Múltiplas parceiras
-      'rotation', 'options', 'backup', 'collection', 'roster', 'stable',
+      'daddy', 'pimp', 'player', 'handle', 'train',
       
       // Desvalorização
-      'worthless', 'useless', 'trash', 'garbage', 'nothing'
+      'worthless', 'useless', 'trash', 'nothing'
     ];
 
-    // Palavras neutras para balanceamento
+    // Palavras neutras mínimas para balanceamento
     const neutralWords = [
-      'love', 'heart', 'beautiful', 'amazing', 'wonderful', 'great', 'respect',
-      'equal', 'partner', 'friend', 'support', 'care', 'dream', 'hope', 'future',
-      'together', 'happiness', 'joy', 'peace', 'music', 'song', 'dance', 'party',
-      'family', 'mother', 'father', 'home', 'life', 'work', 'school', 'learn',
-      'happy', 'smile', 'laugh', 'feel', 'think', 'know', 'see', 'good', 'nice'
+      'love', 'heart', 'beautiful', 'amazing', 'great', 'respect',
+      'equal', 'partner', 'friend', 'support', 'care', 'happy',
+      'music', 'song', 'dance', 'family', 'home', 'life', 'good'
     ];
 
-    // Construir tokenizer
+    // Construir tokenizer compacto
     let tokenIndex = 2; // 0=padding, 1=unknown
     
-    misogynyWords.forEach(word => {
+    criticalWords.forEach(word => {
       this.tokenizer.set(word.toLowerCase(), tokenIndex++);
     });
     
@@ -70,26 +65,26 @@ export class MisogynyCNNModel {
       this.tokenizer.set(word.toLowerCase(), tokenIndex++);
     });
 
-    console.log(`Tokenizer inicializado com ${this.tokenizer.size} palavras`);
+    console.log(`Tokenizer ultra-compacto inicializado com ${this.tokenizer.size} palavras`);
   }
 
   async createModel(): Promise<void> {
-    console.log('Criando modelo CNN simplificado...');
+    console.log('Criando modelo CNN ultra-compacto...');
 
-    // Arquitetura simplificada para dataset pequeno
+    // Arquitetura minimalista para evitar problemas de memória
     this.model = tf.sequential({
       layers: [
-        // Embedding menor
+        // Embedding muito pequeno
         tf.layers.embedding({
           inputDim: this.vocabSize,
-          outputDim: 128, // Reduzido de 256
+          outputDim: 32, // Drasticamente reduzido de 128
           inputLength: this.maxSequenceLength,
           name: 'embedding'
         }),
 
-        // Uma única camada convolucional
+        // Uma única camada convolucional minimalista
         tf.layers.conv1d({
-          filters: 64, // Reduzido de 128
+          filters: 16, // Reduzido de 64
           kernelSize: 3,
           activation: 'relu',
           name: 'conv1d_main'
@@ -99,20 +94,13 @@ export class MisogynyCNNModel {
         // Global pooling
         tf.layers.globalMaxPooling1d({ name: 'global_pooling' }),
 
-        // Camadas densas simplificadas
+        // Camadas densas ultra-compactas
         tf.layers.dense({
-          units: 64, // Reduzido de 256
+          units: 16, // Reduzido de 64
           activation: 'relu',
           name: 'dense_1'
         }),
-        tf.layers.dropout({ rate: 0.3, name: 'dropout_1' }), // Reduzido de 0.5
-        
-        tf.layers.dense({
-          units: 32, // Reduzido de 128
-          activation: 'relu',
-          name: 'dense_2'
-        }),
-        tf.layers.dropout({ rate: 0.2, name: 'dropout_2' }), // Reduzido de 0.3
+        tf.layers.dropout({ rate: 0.2, name: 'dropout_1' }),
         
         // Saída
         tf.layers.dense({
@@ -125,12 +113,13 @@ export class MisogynyCNNModel {
 
     // Configuração otimizada
     this.model.compile({
-      optimizer: tf.train.adam(0.001), // Learning rate padrão
-      loss: 'binaryCrossentropy', // Melhor para classificação binária
+      optimizer: tf.train.adam(0.001),
+      loss: 'binaryCrossentropy',
       metrics: ['accuracy']
     });
 
-    console.log('Modelo CNN simplificado criado!');
+    console.log('Modelo CNN ultra-compacto criado!');
+    console.log(`Parâmetros totais: ${this.model.countParams()}`);
     this.model.summary();
   }
 
@@ -166,7 +155,7 @@ export class MisogynyCNNModel {
     const recognitionRate = (recognizedWords / words.length) * 100;
     console.log(`Taxa de reconhecimento: ${recognitionRate.toFixed(1)}%`);
 
-    // Padding/truncamento
+    // Padding/truncamento para sequência menor
     if (sequence.length > this.maxSequenceLength) {
       return sequence.slice(0, this.maxSequenceLength);
     } else {
@@ -179,7 +168,7 @@ export class MisogynyCNNModel {
       await this.createModel();
     }
 
-    console.log(`Iniciando treinamento com ${trainingData.length} amostras...`);
+    console.log(`Iniciando treinamento ultra-compacto com ${trainingData.length} amostras...`);
 
     // Verificar balanceamento do dataset
     const scores = trainingData.map(item => item.score);
@@ -206,10 +195,10 @@ export class MisogynyCNNModel {
 
       console.log('Tensores criados:', xs.shape, ys.shape);
 
-      // Treinamento com configurações ajustadas
+      // Treinamento com configurações para modelo pequeno
       const history = await this.model!.fit(xs, ys, {
-        epochs: 20, // Reduzido para evitar overfitting
-        batchSize: Math.min(8, trainingData.length), // Batch size adaptativo
+        epochs: 15, // Reduzido para modelo pequeno
+        batchSize: Math.min(4, trainingData.length), // Batch size menor
         validationSplit: 0.2,
         verbose: 1,
         shuffle: true,
@@ -220,9 +209,9 @@ export class MisogynyCNNModel {
             const acc = logs?.accuracy?.toFixed(4) || 'N/A';
             console.log(`Época ${epoch + 1}: loss=${loss}, val_loss=${valLoss}, acc=${acc}`);
             
-            // Early stopping simples
-            if (logs?.val_loss && logs.val_loss > (logs.loss || 0) * 2) {
-              console.log('Possível overfitting detectado');
+            // Early stopping para modelo pequeno
+            if (logs?.val_loss && logs.val_loss > (logs.loss || 0) * 3) {
+              console.log('Possível overfitting detectado em modelo pequeno');
             }
           }
         }
@@ -236,10 +225,21 @@ export class MisogynyCNNModel {
       throw error;
     } finally {
       // Cleanup obrigatório de memória
-      if (xs) xs.dispose();
-      if (ys) ys.dispose();
+      if (xs) {
+        xs.dispose();
+        xs = null;
+      }
+      if (ys) {
+        ys.dispose();
+        ys = null;
+      }
       
-      // Forçar garbage collection se disponível
+      // Forçar garbage collection
+      if (tf.memory) {
+        console.log('Memória TensorFlow antes do cleanup:', tf.memory());
+      }
+      tf.disposeVariables();
+      
       if (typeof window !== 'undefined' && (window as any).gc) {
         (window as any).gc();
       }
@@ -251,7 +251,7 @@ export class MisogynyCNNModel {
       throw new Error('Modelo não foi criado. Execute createModel() primeiro.');
     }
 
-    console.log('=== PREDIÇÃO ===');
+    console.log('=== PREDIÇÃO ULTRA-COMPACTA ===');
     
     const sequence = this.preprocessText(lyrics);
     const inputTensor = tf.tensor2d([sequence]);
@@ -281,8 +281,6 @@ export class MisogynyCNNModel {
 
       console.log(`Score: ${normalizedScore.toFixed(3)}, Categoria: ${category}, Confiança: ${confidence.toFixed(3)}`);
 
-      prediction.dispose();
-
       return {
         score: normalizedScore,
         confidence: confidence,
@@ -290,25 +288,52 @@ export class MisogynyCNNModel {
       };
     } finally {
       inputTensor.dispose();
+      if (typeof prediction !== 'undefined') {
+        (prediction as tf.Tensor).dispose();
+      }
     }
   }
 
-  async saveModel(path: string = 'localstorage://misogyny-cnn-simplified'): Promise<void> {
+  async saveModel(path: string = 'localstorage://misogyny-cnn-ultra-compact'): Promise<void> {
     if (!this.model) {
       throw new Error('Modelo não foi criado.');
     }
 
-    await this.model.save(path);
-    console.log(`Modelo salvo em: ${path}`);
+    try {
+      // Verificar tamanho do modelo antes de salvar
+      const modelSize = this.model.countParams();
+      console.log(`Tentando salvar modelo com ${modelSize} parâmetros`);
+      
+      await this.model.save(path);
+      console.log(`Modelo ultra-compacto salvo com sucesso em: ${path}`);
+    } catch (error) {
+      console.error('Erro ao salvar modelo:', error);
+      
+      // Tentar salvar com nome diferente em caso de erro
+      const fallbackPath = 'localstorage://misogyny-cnn-mini';
+      try {
+        await this.model.save(fallbackPath);
+        console.log(`Modelo salvo em caminho alternativo: ${fallbackPath}`);
+      } catch (fallbackError) {
+        console.error('Falha também no caminho alternativo:', fallbackError);
+        throw new Error('Não foi possível salvar o modelo. Modelo muito grande para localStorage.');
+      }
+    }
   }
 
-  async loadModel(path: string = 'localstorage://misogyny-cnn-simplified'): Promise<void> {
+  async loadModel(path: string = 'localstorage://misogyny-cnn-ultra-compact'): Promise<void> {
     try {
       this.model = await tf.loadLayersModel(path);
       console.log(`Modelo carregado de: ${path}`);
     } catch (error) {
-      console.log('Modelo não encontrado, criando novo...');
-      await this.createModel();
+      console.log('Modelo não encontrado, tentando caminho alternativo...');
+      try {
+        this.model = await tf.loadLayersModel('localstorage://misogyny-cnn-mini');
+        console.log('Modelo carregado do caminho alternativo');
+      } catch (fallbackError) {
+        console.log('Nenhum modelo encontrado, criando novo...');
+        await this.createModel();
+      }
     }
   }
 
@@ -320,7 +345,7 @@ export class MisogynyCNNModel {
     return {
       totalParams: this.model.countParams(),
       layers: this.model.layers.length,
-      architecture: 'CNN Simplified',
+      architecture: 'CNN Ultra-Compact',
       vocabSize: this.vocabSize,
       maxSequenceLength: this.maxSequenceLength,
       tokenizerSize: this.tokenizer.size
