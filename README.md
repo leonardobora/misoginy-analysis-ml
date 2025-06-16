@@ -1,4 +1,3 @@
-
 # 🎵 Sistema de Classificação Musical - Execução 100% Local
 
 > Sistema automatizado para classificação de misoginia em letras musicais usando CNN ultra-compacta. **Totalmente offline - sem dependências de serviços externos.**
@@ -37,12 +36,6 @@ Criar um modelo de classificação automática que analisa letras de músicas e 
 - **Banco de Dados**: IndexedDB (armazenamento local do navegador)
 - **Dataset**: CSV incluído no projeto (6.000+ músicas)
 - **Dependências**: Zero dependências online após instalação
-
-- **Frontend:** React 18 + TypeScript
-- **UI Framework:** Tailwind CSS + shadcn/ui
-- **Machine Learning:** TensorFlow.js (CNN)
-- **Database:** Supabase (PostgreSQL)
-- **Build Tool:** Vite
 
 ## 🏗️ Arquitetura do Sistema
 
@@ -107,88 +100,24 @@ sudo yum install git
 #### 1. Clone o Repositório
 ```bash
 # Clone o projeto
-git clone https://github.com/[SEU_USUARIO]/sistema-classificacao-musical.git
-cd sistema-classificacao-musical
+# Substitua pelo nome correto do repositório
+ git clone https://github.com/leonardobora/musico-analisa-sensivel.git
+cd musico-analisa-sensivel
 ```
 
 #### 2. Instale as Dependências
 ```bash
-# Instalar dependências do projeto
 npm install
-
-# Aguarde a instalação (pode demorar alguns minutos)
 ```
 
-#### 3. Configure as Variáveis de Ambiente
+#### 3. Execute o Projeto
 ```bash
-# Windows (PowerShell)
-copy .env.example .env.local
-
-# Linux/Mac
-cp .env.example .env.local
-```
-
-Edite o arquivo `.env.local` com um editor de texto:
-
-```env
-# Configurações do Supabase (Opcional)
-VITE_SUPABASE_URL=sua_url_do_supabase
-VITE_SUPABASE_ANON_KEY=sua_chave_anonima
-
-# Configurações de desenvolvimento
-VITE_ENV=development
-```
-
-**Nota:** O sistema funciona sem Supabase, usando armazenamento local do navegador.
-
-#### 4. Execute o Projeto
-
-```bash
-# Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
-Aguarde a mensagem:
-```
-Local:   http://localhost:8080
-Network: http://192.168.x.x:8080
-```
+Acesse: `http://localhost:8080`
 
-#### 5. Acesse o Sistema
-- Abra seu navegador
-- Acesse: `http://localhost:8080`
-- O sistema deve carregar com todas as funcionalidades
-
-### Solução de Problemas Comuns
-
-#### Windows
-```powershell
-# Se houver erro de permissão no PowerShell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-# Se npm install falhar
-npm cache clean --force
-npm install
-```
-
-#### Linux
-```bash
-# Se houver problemas de permissão
-sudo chown -R $(whoami) ~/.npm
-
-# Se faltar dependências nativas
-sudo apt install build-essential
-
-# Limpar cache se necessário
-npm cache clean --force
-```
-
-#### Problemas de Porta
-Se a porta 8080 estiver ocupada:
-```bash
-# Usar porta alternativa
-npm run dev -- --port 3000
-```
+**Observação:** Não é necessário configurar variáveis de ambiente ou Supabase. Todo o armazenamento é local (IndexedDB).
 
 ## 🎵 Dataset
 
@@ -234,6 +163,22 @@ Baseado em literatura acadêmica sobre detecção de misoginia:
 - Selecione músicas do dataset
 - Atribua pontuações de 0 a 1
 - Salve as classificações
+- **Exportação:** Use o botão de exportar para baixar um arquivo `.json` com seus rótulos
+- **Importação:** Use o botão de importar para carregar rótulos previamente salvos (útil para colaboração ou entrega)
+
+#### Formato do arquivo de rótulos (`labels.json`):
+```json
+[
+  {
+    "id": "unique_song_id_1",
+    "title": "Nome da Música 1",
+    "artist": "Nome do Artista 1",
+    "year": 2020,
+    "lyrics": "Letra da música aqui...",
+    "label": "misogynistic"
+  }
+]
+```
 
 ### 2. Treinamento do Modelo
 - Vá para "Treinamento"
