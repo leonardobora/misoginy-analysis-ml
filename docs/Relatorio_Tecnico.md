@@ -3,7 +3,7 @@
 
 ## Detecção de Conteúdo Misógino usando Redes Neurais Convolucionais
 
-**Universidade Federal do Paraná (UFPR)**  
+**UniBrasil Centro Universitário**  
 **Curso:** Engenharia de Software - 7º Período - Turma B  
 **Disciplina:** Aprendizado de Máquina  
 **Professor:** Mozart Hasse  
