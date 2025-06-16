@@ -1,4 +1,3 @@
-
 import * as tf from '@tensorflow/tfjs';
 
 export class ModelArchitecture {
@@ -112,11 +111,14 @@ export class ModelArchitecture {
     });
 
     // Configuração de treinamento otimizada
+    // Compilação do modelo com otimizador Adam e métricas
     model.compile({
-      optimizer: tf.train.adam(0.0005), // Learning rate menor para convergência mais estável
-      loss: 'binaryCrossentropy',
-      metrics: ['accuracy', 'precision', 'recall']
+      optimizer: tf.train.adam(0.0005), // Taxa de aprendizado ajustada
+      loss: 'meanSquaredError', // Ideal para regressão de score
+      metrics: ['accuracy', 'mae'] // Usa o alias 'mae' para Mean Absolute Error
     });
+
+    console.log('✅ Modelo compilado com sucesso!');
 
     const paramCount = model.countParams();
     console.log('🎯 Modelo CNN aprimorado criado!');
