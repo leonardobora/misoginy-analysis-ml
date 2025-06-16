@@ -174,14 +174,14 @@ npm run dev
 
 Para questões acadêmicas ou técnicas, entre em contato com a equipe:
 
-- **Leonardo Bora** - Arquitetura e ML
-- **Letícia Campos** - Especialista em ML
-- **Carlos Krueger** - Frontend  
-- **Nathan** - Backend
-- **Luan Constâncio** - Análise de Dados
+- **Leonardo Bora** - Arquitetura e Machine Learning
+- **Letícia Campos** - Especialista em ML e Análise
+- **Carlos Krueger** - Desenvolvimento Frontend  
+- **Nathan** - Análise de Dados e Rotulagem
+- **Luan Constâncio** - Desenvolvimento Back-End
 
 ---
 
 **Versão:** 1.0  
-**Data:** Dezembro 2024  
+**Data:** Junho 2025  
 **Disciplina:** Aprendizado de Máquina - Prof. Mozart Hasse
