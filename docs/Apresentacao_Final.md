@@ -3,7 +3,7 @@
 
 ## Detecção de Misoginia usando CNN Ultra-Compacta
 
-**UFPR - Engenharia de Software - 7º Período - Turma B**  
+**UniBrasil Centro Universitário - Engenharia de Software - 7º Período - Turma B**  
 **Aprendizado de Máquina - Prof. Mozart Hasse**
 
 ---
@@ -17,10 +17,9 @@
 - **Leonardo Bora** - Arquitetura e Machine Learning
 - **Letícia Campos** - Especialista em ML e Análise
 - **Carlos Krueger** - Desenvolvimento Frontend  
-- **Nathan** - Desenvolvimento Backend
-- **Luan Constâncio** - Análise de Dados e Rotulagem
-
-**ADS2 - Dezembro 2024**
+- **Nathan** - Análise de Dados e Rotulagem
+- **Luan Constâncio** - Desenvolvimento Back-End
+**ADS2 - Junho 2025**
 
 ---
 
@@ -344,8 +343,8 @@ Dense (8) → Dropout → Sigmoid [0,1]
 - **Leonardo Bora** - Arquitetura e Machine Learning
 - **Letícia Campos** - Especialista em ML e Análise
 - **Carlos Krueger** - Desenvolvimento Frontend  
-- **Nathan** - Desenvolvimento Backend
-- **Luan Constâncio** - Análise de Dados
+- **Nathan** - Análise de Dados e Rotulagem
+- **Luan Constâncio** - Desenvolvimento Back-End
 
 **Contatos acadêmicos disponíveis após a apresentação**
 
@@ -355,4 +354,3 @@ Dense (8) → Dropout → Sigmoid [0,1]
 
 ### 🎵 *"Music is a universal language, but we must ensure it speaks of equality, not oppression."*
 
-**UFPR - Engenharia de Software - Prof. Mozart Hasse**
