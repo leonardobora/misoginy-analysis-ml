@@ -317,6 +317,6 @@ CREATE TABLE manual_labels (
 - A3: Métricas detalhadas de performance
 - A4: Interface de usuário (screenshots)
 
-**Entrega:** Dezembro 2024  
+**Entrega:** Junho 2025  
 **Disciplina:** Aprendizado de Máquina - Prof. Mozart Hasse  
-**UFPR - Engenharia de Software**
+**UniBrasil Centro Universitário**
