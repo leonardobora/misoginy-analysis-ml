@@ -3,7 +3,7 @@
 
 ## Sistema de Detecção de Conteúdo Misógino em Letras de Música
 
-**Universidade:** UFPR  
+**Universidade:** UniBrasil   
 **Curso:** Engenharia de Software - 7º Período - Turma B  
 **Disciplina:** Aprendizado de Máquina  
 **Professor:** Mozart Hasse  
