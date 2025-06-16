@@ -4,24 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Music, Database, Brain, AlertTriangle, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
-interface SystemStats {
-  totalSongs: number;
-  labeledSongs: number;
-  averageScore: number;
-  completionRate: number;
-  lastUpdate: string;
-}
-
-interface RecentAnalysis {
-  id: number;
-  artist: string;
-  title: string;
-  score: number;
-  category: string;
-  created_at: string;
-}
+import { localDataService, SystemStats, RecentAnalysis } from '@/services/LocalDataService';
 
 const DashboardOverview = () => {
   const [systemStats, setSystemStats] = useState<SystemStats>({
@@ -43,60 +26,13 @@ const DashboardOverview = () => {
     try {
       setIsLoading(true);
       
-      // Carregar estatísticas do sistema
-      const { count: totalSongs } = await supabase
-        .from('songs')
-        .select('*', { count: 'exact', head: true });
-
-      const { data: labelsData, count: labeledSongs } = await supabase
-        .from('manual_labels')
-        .select('score', { count: 'exact' })
-        .eq('theme', 'Misoginia');
-
-      // Calcular média de scores
-      const averageScore = labelsData && labelsData.length > 0 
-        ? labelsData.reduce((sum, label) => sum + label.score, 0) / labelsData.length
-        : 0;
-
-      // Calcular taxa de completude
-      const completionRate = totalSongs && totalSongs > 0 
-        ? (labeledSongs || 0) / totalSongs * 100 
-        : 0;
-
-      setSystemStats({
-        totalSongs: totalSongs || 0,
-        labeledSongs: labeledSongs || 0,
-        averageScore: averageScore,
-        completionRate: completionRate,
-        lastUpdate: new Date().toLocaleDateString('pt-BR')
-      });
+      // Carregar estatísticas do sistema usando LocalDataService
+      const stats = await localDataService.getSystemStats();
+      setSystemStats(stats);
 
       // Carregar análises recentes
-      const { data: recentData } = await supabase
-        .from('manual_labels')
-        .select(`
-          id,
-          score,
-          created_at,
-          songs (
-            artist,
-            title
-          )
-        `)
-        .eq('theme', 'Misoginia')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      const formattedRecent = recentData?.map(item => ({
-        id: item.id,
-        artist: item.songs.artist,
-        title: item.songs.title,
-        score: item.score,
-        category: getCategory(item.score),
-        created_at: item.created_at
-      })) || [];
-
-      setRecentAnalyses(formattedRecent);
+      const recentData = await localDataService.getRecentAnalyses(5);
+      setRecentAnalyses(recentData);
 
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);

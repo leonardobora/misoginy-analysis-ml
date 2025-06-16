@@ -1,4 +1,3 @@
-
 # Relatório Técnico - Sistema de Classificação Musical
 
 ## Detecção de Conteúdo Misógino usando Redes Neurais Convolucionais
@@ -7,6 +6,7 @@
 **Curso:** Engenharia de Software - 7º Período - Turma B  
 **Disciplina:** Aprendizado de Máquina  
 **Professor:** Mozart Hasse  
+**Ano:** 2025
 
 **Equipe:**
 - Leonardo Bora
@@ -19,7 +19,7 @@
 
 ## Resumo Executivo
 
-Este projeto implementa um sistema de classificação automática para detectar conteúdo misógino em letras de música usando **Redes Neurais Convolucionais (CNN)**. O sistema analisa aproximadamente 6.500 músicas do dataset "Top 100 Songs & Lyrics By Year (1959–2023)" e atribui pontuações contínuas de 0 a 1, atendendo aos requisitos da **ADS2** de execução 100% local sem serviços externos.
+Este projeto implementa um sistema de classificação automática para detectar conteúdo misógino em letras de música usando **Redes Neurais Convolucionais (CNN)**. O sistema analisa aproximadamente 6.500 músicas do dataset "Top 100 Songs & Lyrics By Year (1959–2023)" e atribui pontuações contínuas de 0 a 1. A arquitetura foi projetada para atender ao requisito da **ADS2 de execução 100% local**, utilizando tecnologias de navegador como IndexedDB e TensorFlow.js, sem a necessidade de serviços externos ou conexão com a internet após a carga inicial.
 
 ## 1. Introdução e Objetivos
 
@@ -75,15 +75,25 @@ Baseado em literatura acadêmica sobre detecção de misoginia (Waseem & Hovy, 2
 
 ## 3. Arquitetura Técnica
 
-### 3.1 Stack Tecnológico
-- **Frontend:** React 18 + TypeScript
-- **UI Framework:** Tailwind CSS + shadcn/ui  
-- **Machine Learning:** TensorFlow.js (CNN)
-- **Database:** Supabase (PostgreSQL)
-- **Build Tool:** Vite
-- **Deploy:** Lovable Platform
+### 3.1. Visão Geral
 
-### 3.2 Arquitetura CNN Ultra-Compacta
+A solução é uma Single-Page Application (SPA) desenvolvida em React/TypeScript, projetada para operar inteiramente no cliente (navegador). A arquitetura se divide em três pilares:
+
+1.  **Interface do Usuário (Frontend):** Componentes interativos para visualização de dados, rotulagem manual e treinamento de modelo.
+2.  **Armazenamento Local (IndexedDB):** Um banco de dados no navegador que persiste o dataset completo, os rótulos manuais e os modelos treinados.
+3.  **Machine Learning Local (TensorFlow.js):** Uma biblioteca que permite o treinamento e a execução de redes neurais diretamente no navegador.
+
+### 3.2. Arquitetura de Dados: 100% Local
+
+Para cumprir o requisito de execução offline, foi implementada uma arquitetura de dados totalmente local, abandonando a necessidade de bancos de dados externos (e.g., Supabase).
+
+**Fluxo de Ingestão:**
+1.  **Fonte de Dados:** O dataset completo (`all_songs_data.json`) é incluído nos arquivos estáticos da aplicação.
+2.  **Carga Inicial:** Na primeira execução, o `AppInitializer` verifica se o banco de dados local (IndexedDB) já foi populado.
+3.  **Ingestão no IndexedDB:** Caso o banco esteja vazio, o sistema lê o arquivo JSON e ingere todas as 6.500 músicas no IndexedDB.
+4.  **Operação Padrão:** Em todas as execuções subsequentes, a aplicação opera exclusivamente sobre os dados no IndexedDB, garantindo performance e funcionamento offline.
+
+### 3.3. Arquitetura CNN Ultra-Compacta
 
 #### Especificações Técnicas:
 - **Tipo:** Convolutional Neural Network 1D para texto
@@ -113,27 +123,21 @@ Dropout: 0.5
 Output Layer: 1 neurônio, Sigmoid [0,1]
 ```
 
-#### Justificativa da Arquitetura:
-1. **CNN 1D:** Captura padrões locais em sequências de texto
-2. **Ultra-compacta:** Necessária para execução em navegadores
-3. **Sigmoid final:** Produz pontuação contínua 0-1 conforme requisito
-4. **Dropout:** Previne overfitting em dataset pequeno
+### 3.4. Justificativas das Escolhas de Arquitetura
 
-### 3.3 Pré-processamento de Texto
+As decisões de arquitetura foram tomadas para equilibrar os requisitos acadêmicos com as limitações técnicas do ambiente de execução (navegador).
 
-#### Pipeline de Processamento:
-1. **Limpeza:** Remoção de caracteres especiais, números
-2. **Normalização:** Conversão para minúsculas
-3. **Tokenização:** Divisão em palavras individuais
-4. **Stopwords:** Remoção de palavras comuns não informativas
-5. **Vocabulário:** Seleção das 1000 palavras mais frequentes
-6. **Padding:** Sequências padronizadas para 50 tokens
-7. **Vetorização:** Conversão para indices numéricos
+**Uso de IndexedDB:**
+A escolha pelo IndexedDB foi motivada pela necessidade de armazenamento persistente e local. Suas limitações foram mitigadas da seguinte forma:
+-   **Limite de Armazenamento:** O dataset completo (~15 MB) e os modelos (~50 KB) consomem um espaço trivial, muito abaixo das cotas de armazenamento dos navegadores modernos.
+-   **Performance de Consultas:** Evitamos consultas complexas no IndexedDB. A lógica de filtragem é executada em memória (JavaScript) após a carga inicial dos dados, o que é performático para o volume de dados do projeto.
+-   **Complexidade da API:** A interação com a API do IndexedDB foi abstraída em uma camada de serviço (`LocalDataService.ts`), simplificando o restante do código.
 
-#### Tratamentos Específicos:
-- Preservação de termos potencialmente misóginos
-- Normalização de variações ortográficas
-- Handling de letras com repetições (ex: "sooo good")
+**Hiperparâmetros Fixos no Modelo CNN:**
+A decisão de fixar os hiperparâmetros (épocas, batch size, etc.) não foi uma omissão, mas uma escolha de engenharia deliberada:
+-   **Estabilidade no Navegador:** Os valores foram otimizados para um modelo "ultra-compacto" que não sobrecarregue a memória ou o processador do navegador do usuário, evitando travamentos.
+-   **Foco na Experiência do Usuário:** Priorizou-se uma experiência de treinamento estável e funcional em detrimento da flexibilidade de configuração, que não era o foco do problema proposto.
+-   **Reprodutibilidade Acadêmica:** Manter os parâmetros fixos garante a consistência e a reprodutibilidade dos resultados, um pilar da metodologia científica.
 
 ## 4. Implementação
 

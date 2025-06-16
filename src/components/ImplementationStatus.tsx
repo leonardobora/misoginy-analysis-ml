@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Clock, AlertTriangle, XCircle, Database, Brain, Music, Tags, BarChart3 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { localDataService } from '@/services/LocalDataService';
 
 interface FeatureStatus {
   name: string;
@@ -34,22 +34,17 @@ const ImplementationStatus = () => {
 
   const loadSystemData = async () => {
     try {
-      // Verificar dados do sistema
-      const { count: totalSongs } = await supabase
-        .from('songs')
-        .select('*', { count: 'exact', head: true });
-
-      const { count: labeledSongs } = await supabase
-        .from('manual_labels')
-        .select('*', { count: 'exact', head: true })
-        .eq('theme', 'Misoginia');
+      console.log('📊 Carregando dados do sistema local...');
+      
+      // Usar LocalDataService para obter estatísticas
+      const stats = await localDataService.getSystemStats();
 
       // Verificar se modelo existe no localStorage
-      const hasModel = localStorage.getItem('tensorflowjs_models/misogyny-cnn-model/info') !== null;
+      const hasModel = localStorage.getItem('tensorflowjs_models/misogyny-cnn-ultra-compact/info') !== null;
 
       setSystemData({
-        totalSongs: totalSongs || 0,
-        labeledSongs: labeledSongs || 0,
+        totalSongs: stats.totalSongs,
+        labeledSongs: stats.labeledSongs,
         hasModel: hasModel
       });
     } catch (error) {

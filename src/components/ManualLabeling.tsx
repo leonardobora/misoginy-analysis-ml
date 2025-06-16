@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Music, Save, SkipForward, CheckCircle, Upload, Filter, Calendar, Search, TrendingUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { localDataService } from '@/services/LocalDataService';
 
 interface Song {
   id: number;
@@ -35,6 +35,16 @@ const ManualLabeling = () => {
   const [sortBy, setSortBy] = useState<string>('year_desc');
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string>('');
+  const [debugInfo, setDebugInfo] = useState<{
+    totalSongs: number;
+    labeledSongs: number;
+    isDataLoaded: boolean;
+    lastError?: string;
+  }>({
+    totalSongs: 0,
+    labeledSongs: 0,
+    isDataLoaded: false
+  });
 
   const severityLevels = [
     { value: 'baixo', label: 'Baixo (0-33)', description: 'Conteúdo com pouca ou nenhuma misoginia' },
@@ -61,6 +71,7 @@ const ManualLabeling = () => {
   useEffect(() => {
     loadSongs();
     loadLabeledCount();
+    loadDebugInfo();
   }, []);
 
   useEffect(() => {
@@ -69,35 +80,23 @@ const ManualLabeling = () => {
 
   const loadSongs = async () => {
     try {
-      // Carregar músicas que ainda não foram rotuladas
-      const { data: labeledSongs } = await supabase
-        .from('manual_labels')
-        .select('song_id')
-        .eq('theme', 'Misoginia');
-
-      const labeledIds = labeledSongs?.map(l => l.song_id) || [];
-
-      const { data, error } = await supabase
-        .from('songs')
-        .select('*')
-        .not('id', 'in', `(${labeledIds.length > 0 ? labeledIds.join(',') : '0'})`)
-        .order('year', { ascending: false })
-        .limit(1000); // Aumentar limite para mais variedade
-
-      if (error) throw error;
+      console.log('📊 Carregando músicas não rotuladas...');
+      setIsLoading(true);
       
-      setSongs(data || []);
+      // Usar LocalDataService em vez do Supabase
+      const songs = await localDataService.getUnlabeledSongs(1000);
+      
+      setSongs(songs || []);
       
       // Extrair anos únicos disponíveis
-      const years = [...new Set((data || []).map(song => song.year))].sort((a, b) => b - a);
+      const years = [...new Set(songs.map(song => song.year))].sort((a, b) => b - a);
       setAvailableYears(years);
       
-      console.log(`${data?.length || 0} músicas carregadas, anos disponíveis:`, years);
+      console.log(`${songs.length} músicas não rotuladas carregadas`);
       
       // Log de músicas recentes para debug
-      const recentSongs = (data || []).filter(song => song.year >= 2010);
+      const recentSongs = songs.filter(song => song.year >= 2010);
       console.log(`Músicas recentes (2010+): ${recentSongs.length}`);
-      console.log('Exemplos de artistas recentes:', recentSongs.slice(0, 10).map(s => `${s.artist} - ${s.title} (${s.year})`));
       
     } catch (error) {
       console.error('Erro ao carregar músicas:', error);
@@ -186,14 +185,29 @@ const ManualLabeling = () => {
 
   const loadLabeledCount = async () => {
     try {
-      const { count } = await supabase
-        .from('manual_labels')
-        .select('*', { count: 'exact', head: true })
-        .eq('theme', 'Misoginia');
-      
-      setLabeledCount(count || 0);
+      const stats = await localDataService.getSystemStats();
+      setLabeledCount(stats.labeledSongs);
     } catch (error) {
       console.error('Erro ao carregar contagem:', error);
+    }
+  };
+
+  const loadDebugInfo = async () => {
+    try {
+      const totalSongs = await localDataService.getSongsCount();
+      const labeledSongs = await localDataService.getLabelsCount('Misoginia');
+      
+      setDebugInfo({
+        totalSongs,
+        labeledSongs,
+        isDataLoaded: totalSongs > 0,
+        lastError: undefined
+      });
+    } catch (error) {
+      setDebugInfo(prev => ({
+        ...prev,
+        lastError: error instanceof Error ? error.message : 'Erro desconhecido'
+      }));
     }
   };
 
@@ -247,16 +261,12 @@ const ManualLabeling = () => {
     try {
       const currentSong = filteredSongs[currentSongIndex];
       
-      const { error } = await supabase
-        .from('manual_labels')
-        .insert({
-          song_id: currentSong.id,
-          theme: 'Misoginia',
-          score: score / 100, // Converter para escala 0-1
-          justification: justification.trim() || null
-        });
-
-      if (error) throw error;
+      await localDataService.insertLabel({
+        song_id: currentSong.id,
+        theme: 'Misoginia',
+        score: score / 100, // Converter para escala 0-1
+        justification: justification.trim() || null
+      });
 
       toast({
         title: "Rótulo Salvo",
@@ -306,18 +316,16 @@ const ManualLabeling = () => {
         const [artist, title] = songTitle.split(' – ');
         if (!artist || !title) continue;
         
-        // Buscar a música no banco
-        const { data: songData } = await supabase
-          .from('songs')
-          .select('id')
-          .ilike('artist', `%${artist.trim()}%`)
-          .ilike('title', `%${title.trim()}%`)
-          .limit(1);
+        // Buscar a música localmente
+        const songs = await localDataService.searchSongs({
+          artist: artist.trim(),
+          title: title.trim()
+        });
           
-        if (songData && songData.length > 0) {
+        if (songs && songs.length > 0) {
           const misogyniaScore = (data as any).categories?.misogyny || 0;
           imports.push({
-            song_id: songData[0].id,
+            song_id: songs[0].id,
             theme: 'Misoginia',
             score: misogyniaScore,
             justification: (data as any).notes || null
@@ -326,11 +334,10 @@ const ManualLabeling = () => {
       }
       
       if (imports.length > 0) {
-        const { error } = await supabase
-          .from('manual_labels')
-          .insert(imports);
-          
-        if (error) throw error;
+        // Inserir rótulos um por um
+        for (const label of imports) {
+          await localDataService.insertLabel(label);
+        }
         
         toast({
           title: "Importação Concluída",
@@ -364,6 +371,31 @@ const ManualLabeling = () => {
     
     // Reset input
     event.target.value = '';
+  };
+
+  const handleForceReload = async () => {
+    try {
+      console.log('🔄 Forçando recarregamento dos dados...');
+      setIsLoading(true);
+      
+      await localDataService.forceReloadData();
+      await loadSongs();
+      await loadDebugInfo();
+      
+      toast({
+        title: "Dados Recarregados",
+        description: "Dataset recarregado com sucesso do arquivo JSON."
+      });
+    } catch (error) {
+      console.error('Erro ao recarregar dados:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao recarregar os dados.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -494,7 +526,7 @@ const ManualLabeling = () => {
               {selectedYear !== 'all' && ` (${yearRanges.find(r => r.value === selectedYear)?.label})`}
             </p>
           </div>
-          <div>
+          <div className="flex gap-2">
             <input
               type="file"
               accept=".json"
@@ -510,6 +542,20 @@ const ManualLabeling = () => {
                 </span>
               </Button>
             </label>
+            <Button 
+              variant="outline" 
+              onClick={handleForceReload}
+              disabled={isLoading}
+              size="sm"
+            >
+              🔄 Debug: Recarregar
+            </Button>
+            <div className="text-xs bg-muted p-2 rounded">
+              <div>📊 Total: {debugInfo.totalSongs} músicas</div>
+              <div>🏷️ Rotuladas: {debugInfo.labeledSongs}</div>
+              <div>🟢 Dados: {debugInfo.isDataLoaded ? 'Carregados' : 'Não carregados'}</div>
+              {debugInfo.lastError && <div className="text-red-500">❌ {debugInfo.lastError}</div>}
+            </div>
           </div>
         </div>
       </div>
@@ -616,28 +662,32 @@ const ManualLabeling = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Informações da Música */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Music className="h-5 w-5" />
-              {currentSong.title}
-            </CardTitle>
-            <CardDescription className="flex items-center gap-4">
-              <span>{currentSong.artist} • {currentSong.year}</span>
-              {currentSong.rank && <Badge variant="secondary">Rank #{currentSong.rank}</Badge>}
-              {currentSong.year >= 2010 && <Badge className="bg-green-600">Recente</Badge>}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+            <CardTitle className="flex items-center gap-3">
+              <Music className="h-6 w-6" />
               <div>
-                <h4 className="font-medium mb-2">Letra da Música:</h4>
-                <div className="bg-muted p-4 rounded-lg max-h-96 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm">
-                    {currentSong.lyrics || 'Letra não disponível'}
-                  </pre>
-                </div>
+                <span className="font-bold text-xl">{currentSong.title}</span>
+                <p className="text-sm text-muted-foreground font-normal">
+                  {currentSong.artist} • {currentSong.year}
+                </p>
               </div>
+            </CardTitle>
+            <div className="flex items-center gap-2 pt-2">
+              {currentSong.rank && (
+                <Badge variant="secondary">Rank #{currentSong.rank}</Badge>
+              )}
+              {currentSong.year >= 2010 && (
+                <Badge className="bg-green-600 hover:bg-green-700">Recente</Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <div className="bg-muted p-4 rounded-lg h-full overflow-y-auto">
+                <h4 className="font-medium mb-2 text-lg">Letra da Música:</h4>
+                <pre className="whitespace-pre-wrap text-sm font-sans">
+                  {currentSong.lyrics || 'Letra não disponível'}
+                </pre>
             </div>
           </CardContent>
         </Card>

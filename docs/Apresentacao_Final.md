@@ -1,24 +1,25 @@
-
 # Apresentação Final - Sistema de Classificação Musical
 
 ## Detecção de Misoginia usando CNN Ultra-Compacta
 
 **UniBrasil Centro Universitário - Engenharia de Software - 7º Período - Turma B**  
 **Aprendizado de Máquina - Prof. Mozart Hasse**
+**Ano: 2025**
 
 ---
 
 ## 🎯 **SLIDE 1: Título e Equipe**
 
 ### Sistema de Classificação Musical
-**Detecção Automática de Conteúdo Misógino usando CNNs**
+**Detecção Automática de Conteúdo Misógino usando CNNs com Execução 100% Local**
 
 **Equipe:**
 - **Leonardo Bora** - Arquitetura e Machine Learning
 - **Letícia Campos** - Especialista em ML e Análise
 - **Carlos Krueger** - Desenvolvimento Frontend  
 - **Nathan** - Análise de Dados e Rotulagem
-- **Luan Constâncio** - Desenvolvimento Back-End
+- **Luan Constâncio** - Desenvolvimento e Dados
+
 **ADS2 - Junho 2025**
 
 ---
@@ -82,27 +83,19 @@ Dense (8) → Dropout → Sigmoid [0,1]
 
 ## 💻 **SLIDE 5: Arquitetura do Sistema**
 
-### Stack Tecnológico Completo
+### Arquitetura 100% Local: Sem Dependências Externas
 
-**Frontend Responsivo:**
-- React 18 + TypeScript
-- Tailwind CSS + shadcn/ui
-- Interface com 7 abas funcionais
+**Desafio:** Como rodar um sistema de IA completo, da rotulagem ao treinamento, sem internet e sem servidores?
 
-**Machine Learning Local:**
-- TensorFlow.js para CNN
-- Processamento de texto integrado
-- Treinamento em tempo real
+**Nossa Solução:**
+1.  **Interface Inteligente (React):** Uma SPA que gerencia todo o fluxo de trabalho.
+2.  **Banco de Dados no Navegador (IndexedDB):**
+    -   O dataset de 6.500 músicas é carregado uma única vez para o IndexedDB.
+    -   Rótulos e modelos treinados são salvos localmente, garantindo persistência e velocidade.
+3.  **IA no Cliente (TensorFlow.js):**
+    -   A CNN é treinada e executa predições diretamente no navegador do usuário.
 
-**Backend e Dados:**
-- Supabase (PostgreSQL)
-- Dataset Kaggle integrado
-- Sistema de rotulagem persistente
-
-**Deploy Profissional:**
-- Lovable Platform
-- GitHub Actions
-- Domínio personalizado
+**Resultado:** Um sistema autônomo, rápido e que cumpre 100% dos requisitos de execução local.
 
 ---
 
@@ -344,7 +337,7 @@ Dense (8) → Dropout → Sigmoid [0,1]
 - **Letícia Campos** - Especialista em ML e Análise
 - **Carlos Krueger** - Desenvolvimento Frontend  
 - **Nathan** - Análise de Dados e Rotulagem
-- **Luan Constâncio** - Desenvolvimento Back-End
+- **Luan Constâncio** - Desenvolvimento e Dados
 
 **Contatos acadêmicos disponíveis após a apresentação**
 

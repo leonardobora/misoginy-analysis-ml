@@ -1,33 +1,32 @@
-
 # Manual do Usuário - Sistema de Classificação Musical
 
-## Sistema de Detecção de Conteúdo Misógino em Letras de Música
+**Versão 1.0 - Junho 2025**
 
-**Universidade:** UniBrasil   
-**Curso:** Engenharia de Software - 7º Período - Turma B  
-**Disciplina:** Aprendizado de Máquina  
-**Professor:** Mozart Hasse  
-
-**Equipe:**
-- Leonardo Bora
-- Letícia Campos  
-- Carlos Krueger
-- Nathan
-- Luan Constâncio
+**Instituição:** UniBrasil Centro Universitário  
+**Projeto:** ADS2 - Aprendizado de Máquina
 
 ---
 
 ## 1. Introdução
 
-Este sistema utiliza **Redes Neurais Convolucionais (CNN)** para detectar e classificar conteúdo misógino em letras de música do dataset "Top 100 Songs & Lyrics By Year (1959–2023)". O sistema atribui uma pontuação contínua de 0 a 1, onde 0 indica ausência de conteúdo misógino e 1 indica conteúdo flagrantemente misógino.
+Bem-vindo ao Sistema de Classificação Musical. Esta ferramenta foi desenvolvida como parte da disciplina de Aprendizado de Máquina para detectar conteúdo misógino em letras de música, utilizando uma Rede Neural Convolucional (CNN) que opera **100% localmente** no seu navegador.
 
-## 2. Acessando o Sistema
+Este manual guiará você por todas as funcionalidades do sistema, desde a análise inicial dos dados até o treinamento e uso do modelo de IA.
 
-### 2.1 Via Web (Lovable)
+## 2. Arquitetura 100% Local
+
+O principal diferencial deste sistema é sua capacidade de funcionar de forma totalmente offline. Isso é possível graças a duas tecnologias principais:
+
+-   **IndexedDB:** Um banco de dados interno do navegador onde todo o dataset de músicas, seus rótulos e os modelos de IA treinados são armazenados de forma segura e persistente.
+-   **TensorFlow.js:** Uma biblioteca que permite treinar e executar modelos de Machine Learning diretamente no seu navegador, sem a necessidade de um servidor externo.
+
+## 3. Acessando o Sistema
+
+### 3.1 Via Web (Lovable)
 - Acesse: [URL do sistema quando publicado]
 - Interface responsiva funciona em desktop e mobile
 
-### 2.2 Instalação Local
+### 3.2 Instalação Local
 ```bash
 git clone [URL_DO_REPOSITORIO]
 cd sistema-classificacao-musical
@@ -35,14 +34,14 @@ npm install
 npm run dev
 ```
 
-## 3. Funcionalidades do Sistema
+## 4. Funcionalidades do Sistema
 
-### 3.1 Aba "Grupo"
+### 4.1 Aba "Grupo"
 - **Finalidade:** Apresentar informações da equipe acadêmica
 - **Conteúdo:** Dados dos integrantes, curso, disciplina
 - **Uso:** Apenas informativo
 
-### 3.2 Aba "Status"  
+### 4.2 Aba "Status"  
 - **Finalidade:** Visualizar progresso de implementação
 - **Indicadores:**
   - ✅ Funcionalidades implementadas
@@ -50,7 +49,7 @@ npm run dev
   - ❌ Pendentes
 - **Métricas:** Contadores de dados, modelos, análises
 
-### 3.3 Aba "Dashboard"
+### 4.3 Aba "Dashboard"
 - **Finalidade:** Análise exploratória dos dados
 - **Visualizações:**
   - Distribuição temporal das músicas (1959-2023)
@@ -58,7 +57,7 @@ npm run dev
   - Análise de frequência de palavras
   - Estatísticas do dataset
 
-### 3.4 Aba "Classificador"
+### 4.4 Aba "Classificador"
 - **Finalidade:** Classificação em tempo real de letras
 - **Como usar:**
   1. Cole a letra da música no campo de texto
@@ -70,7 +69,7 @@ npm run dev
   - Palavras-chave identificadas
   - Justificativa da classificação
 
-### 3.5 Aba "Dados"
+### 4.5 Aba "Dados"
 - **Finalidade:** Gerenciamento do dataset
 - **Funcionalidades:**
   - Upload de arquivos CSV
@@ -79,7 +78,7 @@ npm run dev
   - Validação de dados
 - **Formatos aceitos:** CSV com colunas: year, artist, title, lyrics
 
-### 3.6 Aba "Rotulagem"
+### 4.6 Aba "Rotulagem"
 - **Finalidade:** Classificação manual para treinamento
 - **Processo:**
   1. Selecione filtros (período, artista, etc.)
@@ -98,7 +97,7 @@ npm run dev
 - Considere contexto cultural e artístico
 - Seja consistente nos critérios
 
-### 3.7 Aba "Treinamento"
+### 4.7 Aba "Treinamento"
 - **Finalidade:** Treinar modelo CNN com dados rotulados
 - **Pré-requisitos:** Mínimo 10 músicas rotuladas (ideal: 20+)
 - **Processo:**
@@ -114,63 +113,63 @@ npm run dev
 - Learning Rate: 0.001
 - Arquitetura: CNN Ultra-Compacto
 
-## 4. Interpretação dos Resultados
+## 5. Interpretação dos Resultados
 
-### 4.1 Escala de Pontuação
+### 5.1 Escala de Pontuação
 - **0.0 - 0.3:** Conteúdo com baixa ou nenhuma misoginia
 - **0.3 - 0.7:** Presença moderada de elementos misóginos  
 - **0.7 - 1.0:** Conteúdo claramente misógino ou objetificação explícita
 
-### 4.2 Métricas do Modelo
+### 5.2 Métricas do Modelo
 - **Acurácia:** Porcentagem de classificações corretas
 - **Loss:** Erro do modelo (menor = melhor)
 - **Épocas:** Ciclos de treinamento completados
 
-### 4.3 Limitações
+### 5.3 Limitações
 - Modelo não interpreta ironia ou contexto complexo
 - Focado apenas em letras em inglês
 - Subjetividade inerente ao conceito de misoginia
 - Dataset limitado pode afetar performance
 
-## 5. Solução de Problemas
+## 6. Solução de Problemas
 
-### 5.1 Erro de Dados Insuficientes
+### 6.1 Erro de Dados Insuficientes
 - **Problema:** Menos de 10 músicas rotuladas
 - **Solução:** Rotule mais músicas na aba "Rotulagem"
 
-### 5.2 Erro de Treinamento
+### 6.2 Erro de Treinamento
 - **Problema:** Falha durante treinamento da CNN
 - **Solução:** 
   - Verifique balanceamento do dataset
   - Reduza complexidade se necessário
   - Reinicie o navegador
 
-### 5.3 Problema de Performance
+### 6.3 Problema de Performance
 - **Problema:** Sistema lento
 - **Solução:**
   - Use navegador atualizado (Chrome/Firefox)
   - Feche abas desnecessárias
   - Modelo roda 100% no navegador
 
-## 6. Requisitos Técnicos
+## 7. Requisitos Técnicos
 
-### 6.1 Navegador
+### 7.1 Navegador
 - Chrome 90+ (recomendado)
 - Firefox 88+
 - Safari 14+
 - Edge 90+
 
-### 6.2 Hardware Mínimo
+### 7.2 Hardware Mínimo
 - RAM: 4GB
 - Processador: Dual-core 2GHz
 - Conexão com internet
 
-### 6.3 Para Desenvolvimento Local
+### 7.3 Para Desenvolvimento Local
 - Node.js 18+
 - npm ou yarn
 - Git
 
-## 7. Contato e Suporte
+## 8. Contato e Suporte
 
 Para questões acadêmicas ou técnicas, entre em contato com a equipe:
 

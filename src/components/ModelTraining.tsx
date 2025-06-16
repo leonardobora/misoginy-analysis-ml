@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Play, Square, Settings, TrendingUp, Clock, Database, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { localDataService } from '@/services/LocalDataService';
 import { cnnModel } from '@/services/MisogynyCNNModel';
 
 const ModelTraining = () => {
@@ -33,30 +33,18 @@ const ModelTraining = () => {
 
   const loadTrainingData = async () => {
     try {
-      const { data: labels, error: labelsError } = await supabase
-        .from('manual_labels')
-        .select(`
-          score,
-          justification,
-          songs (
-            id,
-            lyrics,
-            artist,
-            title
-          )
-        `)
-        .eq('theme', 'Misoginia')
-        .not('songs.lyrics', 'is', null);
-
-      if (labelsError) throw labelsError;
-
-      const formattedData = labels?.map(label => ({
-        lyrics: label.songs.lyrics,
-        score: label.score,
-        artist: label.songs.artist,
-        title: label.songs.title,
-        justification: label.justification
-      })) || [];
+      console.log('📊 Carregando dados de treinamento...');
+      
+      // Usar LocalDataService para obter dados de treinamento
+      const trainingData = await localDataService.getTrainingData();
+      
+      const formattedData = trainingData.map(item => ({
+        lyrics: item.lyrics,
+        score: item.score,
+        artist: item.artist,
+        title: item.title,
+        justification: item.justification
+      }));
 
       setTrainingData(formattedData);
       

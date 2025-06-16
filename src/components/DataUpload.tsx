@@ -6,7 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileText, Database, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { localDataService } from '@/services/LocalDataService';
+import { CSVDataLoader } from '@/services/CSVDataLoader';
 
 interface Dataset {
   id: number;
@@ -27,37 +28,35 @@ const DataUpload = () => {
 
   const loadDatasetStats = async () => {
     try {
-      const { data: songsData, count: songsCount } = await supabase
-        .from('songs')
-        .select('*', { count: 'exact', head: true });
+      // Usar LocalDataService em vez do Supabase
+      const stats = await localDataService.getSystemStats();
+      const datasetInfo = await localDataService.getDatasetInfo();
 
-      const { data: labelsData, count: labelsCount } = await supabase
-        .from('manual_labels')
-        .select('*', { count: 'exact', head: true });
-
-      const stats: Dataset[] = [];
+      const datasets: Dataset[] = [];
       
-      if (songsCount && songsCount > 0) {
-        stats.push({
+      if (datasetInfo.totalSongs > 0) {
+        datasets.push({
           id: 1,
-          name: "Dataset Principal (Kaggle)",
-          totalSongs: songsCount,
+          name: "Dataset Principal (CSV Local)",
+          totalSongs: datasetInfo.totalSongs,
           status: "Ativo",
-          lastUpdate: new Date().toLocaleDateString('pt-BR')
+          lastUpdate: datasetInfo.lastLoaded 
+            ? new Date(datasetInfo.lastLoaded).toLocaleDateString('pt-BR')
+            : new Date().toLocaleDateString('pt-BR')
         });
       }
 
-      if (labelsCount && labelsCount > 0) {
-        stats.push({
+      if (stats.labeledSongs > 0) {
+        datasets.push({
           id: 2,
           name: "Rótulos Manuais",
-          totalSongs: labelsCount,
+          totalSongs: stats.labeledSongs,
           status: "Ativo", 
           lastUpdate: new Date().toLocaleDateString('pt-BR')
         });
       }
 
-      setDatasets(stats);
+      setDatasets(datasets);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
     }
@@ -165,16 +164,9 @@ const DataUpload = () => {
         const batch = songs.slice(start, end);
         
         try {
-          const { error } = await supabase
-            .from('songs')
-            .insert(batch);
-            
-          if (error) {
-            console.error('Erro no lote', i + 1, ':', error);
-            errorCount += batch.length;
-          } else {
-            successCount += batch.length;
-          }
+          // Usar LocalDataService para salvar o lote
+          await localDataService.bulkInsertSongs(batch);
+          successCount += batch.length;
         } catch (batchError) {
           console.error('Erro no lote', i + 1, ':', batchError);
           errorCount += batch.length;

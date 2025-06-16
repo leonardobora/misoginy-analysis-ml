@@ -1,5 +1,7 @@
 
-# Sistema de Classificação Musical - Detecção de Misoginia
+# 🎵 Sistema de Classificação Musical - Execução 100% Local
+
+> Sistema automatizado para classificação de misoginia em letras musicais usando CNN ultra-compacta. **Totalmente offline - sem dependências de serviços externos.**
 
 ## 📋 Sobre o Projeto
 
@@ -27,7 +29,14 @@ Criar um modelo de classificação automática que analisa letras de músicas e 
 | **Nathan** | Desenvolvedor Backend | APIs, integração de dados |
 | **Luan Constâncio** | Analista de Dados | Rotulagem manual, pré-processamento |
 
-## 🚀 Tecnologias Utilizadas
+## 🚀 Tecnologias Utilizadas - **EXECUÇÃO 100% LOCAL**
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Components**: Shadcn/UI + TailwindCSS  
+- **Machine Learning**: TensorFlow.js (execução no navegador)
+- **Banco de Dados**: IndexedDB (armazenamento local do navegador)
+- **Dataset**: CSV incluído no projeto (6.000+ músicas)
+- **Dependências**: Zero dependências online após instalação
 
 - **Frontend:** React 18 + TypeScript
 - **UI Framework:** Tailwind CSS + shadcn/ui
