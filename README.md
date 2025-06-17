@@ -25,8 +25,8 @@ Criar um modelo de classificação automática que analisa letras de músicas e 
 | **Leonardo Bora** | Desenvolvedor Full-Stack | Arquitetura do sistema, modelagem CNN |
 | **Letícia Campos** | Especialista em ML | Treinamento de modelos, análise de dados |
 | **Carlos Krueger** | Desenvolvedor Frontend | Interface do usuário, visualizações |
-| **Nathan** | Desenvolvedor Backend | APIs, integração de dados |
-| **Luan Constâncio** | Analista de Dados | Rotulagem manual, pré-processamento |
+| **Luan constâncio** | Desenvolvedor Backend | APIs, integração de dados |
+| **Nathan Correia** | Analista de Dados | Rotulagem manual, pré-processamento |
 
 ## 🚀 Tecnologias Utilizadas - **EXECUÇÃO 100% LOCAL**
 
